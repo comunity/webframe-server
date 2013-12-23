@@ -1,0 +1,26 @@
+{
+  "name": "webframe-server",
+  "description": "Node.js framework for building REST servers",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/comunity/webframe-server.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "node tests/run"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/comunity/webframe-server",
+  "dependencies": {
+    "underscore.string": "*",
+	"promisefy": ">0.0.2",
+	"webframe-base": "*"
+    },
+  "devDependencies": {},
+  "author": {
+    "name": "Hans Malherbe",
+    "email": "hansm@comunity.co.za",
+    "url": "http://www.comunity.co.za"
+  }
+}
