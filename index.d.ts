@@ -1,56 +1,64 @@
 declare module 'webframe-server' {
+    ///<reference path="../../typed/node/node.d.ts" />
+    ///<reference path="./node_modules/webframe-base/index.d.ts" />
+    ///<reference path="../../typed/q/Q.d.ts" />
+
+    import wfbase = require('webframe-base')
+
     import http = require('http');
-    export class FileHandler extends Handler {
+    import url = require('url');
+    import stream = require('stream');
+    export class FileHandler extends wfbase.Handler {
         private _basepath;
         private _virtualroot;
         private _logger;
-        constructor(_basepath: string, _virtualroot: string, _logger: Logger);
+        constructor(_basepath: string, _virtualroot: string, _logger: wfbase.Logger);
         public identified(uri: url.Url): boolean;
-        public read(uri: url.Url, user: string, reqId: string, accept: string): Q.Promise<Msg>;
+        public read(uri: url.Url, user: string, reqId: string, accept: string): Q.Promise<wfbase.Msg>;
     }
-    export class FileResource extends Resource {
+    export class FileResource extends wfbase.Resource {
         private _filepath;
         private _logger;
         private _autocreate;
         private _md5tasks;
         private _md5;
-        constructor(_filepath: string, _logger: Logger, _autocreate?: boolean);
+        constructor(_filepath: string, _logger: wfbase.Logger, _autocreate?: boolean);
         public md5(): Q.Promise<NodeBuffer>;
         public exists(): Q.Promise<boolean>;
-        public read(track: string, accept: string): Q.Promise<Msg>;
-        public replace(track: string, rep: Msg): Q.Promise<Msg>;
+        public read(track: string, accept: string): Q.Promise<wfbase.Msg>;
+        public replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg>;
         private _replace(track, rep);
-        public exec(track: string, rep: Msg, accept?: string): Q.Promise<Msg>;
+        public exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
     }
-    export class HttpResource extends Resource {
+    export class HttpResource extends wfbase.Resource {
         private _url;
         private _logger;
         private _dontthrow;
-        constructor(_url: string, _logger: Logger, _dontthrow?: boolean);
-        public read(track: string, accept: string): Q.Promise<Msg>;
-        public exec(track: string, message: Msg, accept?: string): Q.Promise<Msg>;
-        public replace(track: string, message: Msg, accept?: string): Q.Promise<Msg>;
-        public remove(track: string, accept: string): Q.Promise<Msg>;
+        constructor(_url: string, _logger: wfbase.Logger, _dontthrow?: boolean);
+        public read(track: string, accept: string): Q.Promise<wfbase.Msg>;
+        public exec(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
+        public replace(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
+        public remove(track: string, accept: string): Q.Promise<wfbase.Msg>;
     }
-    export class HttpResourceFactory implements ResourceFactory {
+    export class HttpResourceFactory implements wfbase.ResourceFactory {
         private _logger;
         private _dontthrow;
-        constructor(_logger: Logger, _dontthrow?: boolean);
-        public create(url: string, user: string, pw: string): Resource;
+        constructor(_logger: wfbase.Logger, _dontthrow?: boolean);
+        public create(url: string, user: string, pw: string): wfbase.Resource;
     }
     export class HttpServer {
         public server: http.Server;
-        public handlers: Handler[];
-        constructor(port: number, authn: Authenticate, errorLog: Logger);
+        public handlers: wfbase.Handler[];
+        constructor(port: number, authn: wfbase.Authenticate, errorLog: wfbase.Logger);
         public close(): void;
-        public add(handler: Handler): void;
+        public add(handler: wfbase.Handler): void;
     }
     export function memoryStream(buffer: NodeBuffer): stream.ReadableStream;
     export function pullStream(is: stream.ReadableStream): Q.Promise<NodeBuffer>;
-    export class StreamMsg extends BaseMsg {
+    export class StreamMsg extends wfbase.BaseMsg {
         private _is;
         constructor(statusCode: number, headers: any, _is: stream.ReadableStream);
-        public respond(res: Response): Q.Promise<Msg>;
+        public respond(res: wfbase.Response): Q.Promise<wfbase.Msg>;
         public getBuffer(): Q.Promise<NodeBuffer>;
     }
 }
