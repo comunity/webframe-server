@@ -1,13 +1,8 @@
 declare module 'webframe-server' {
-    ///<reference path="../../typed/node/node.d.ts" />
-    ///<reference path="./node_modules/webframe-base/index.d.ts" />
-    ///<reference path="../../typed/q/Q.d.ts" />
-
-    import wfbase = require('webframe-base')
-
     import http = require('http');
     import url = require('url');
     import stream = require('stream');
+    import wfbase = require('webframe-base')
     export class FileHandler extends wfbase.Handler {
         private _basepath;
         private _virtualroot;
