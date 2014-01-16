@@ -69,5 +69,10 @@
   <ItemGroup>
     <Content Include="package.json" />
   </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="httpCacheDirectives.ts" />
+    <TypeScriptCompile Include="tests\all.ts" />
+    <TypeScriptCompile Include="tests\parseHttpHeader.ts" />
+  </ItemGroup>
   <Import Project="$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets')" />
 </Project>

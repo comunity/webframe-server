@@ -125,7 +125,10 @@ function setupRequestListener(handlers, authn, errorLog) {
 }
 
 function getMaxAge(headers) {
-    var maxAge = httpCacheDirectives(headers['cache-control'])['max-age'];
+    var cacheControl = httpCacheDirectives(headers['cache-control']);
+    if (!cacheControl)
+        return -1;
+    var maxAge = cacheControl['max-age'];
     if (maxAge === void 0)
         return -1;
     return maxAge === void 0 ? -1 : parseInt(maxAge, 10);
