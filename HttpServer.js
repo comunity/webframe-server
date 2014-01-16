@@ -1,11 +1,13 @@
 // Copyright (c) ComUnity 2013
 // hansm@comunity.co.za (Hans Malherbe)
-///<reference path="../../typed/node/node.d.ts" />
-///<reference path="../../typed/q/Q.d.ts" />
+///<reference path="../typed/node/node.d.ts" />
+///<reference path="../typed/q/Q.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
+///<reference path="./node_modules/promisefy/index.d.ts" />
 var wfbase = require('webframe-base');
 
 var http = require('http');
+var httpCacheDirectives = require('./httpCacheDirectives');
 var p = require('promisefy');
 var Q = require('q');
 
@@ -122,10 +124,17 @@ function setupRequestListener(handlers, authn, errorLog) {
     }
 }
 
+function getMaxAge(headers) {
+    var maxAge = httpCacheDirectives(headers['cache-control'])['max-age'];
+    if (maxAge === void 0)
+        return -1;
+    return maxAge === void 0 ? -1 : parseInt(maxAge, 10);
+}
+
 function getResponse(handlers, req, user, pw, reqId) {
     var uri = url.parse('http://' + req.headers['host'] + req.url);
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, req.headers['accept']);
+        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept']);
     if (req.method === 'DELETE')
         return remove(handlers, uri, user, pw, reqId);
     if (req.method == 'PUT')
@@ -143,7 +152,7 @@ function getMessage(req) {
     return new StreamMsg(0, req.headers, req);
 }
 
-function read(handlers, uri, user, pw, reqId, accept) {
+function read(handlers, uri, user, pw, reqId, maxAge, accept) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -153,7 +162,7 @@ function read(handlers, uri, user, pw, reqId, accept) {
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
-        return handler.read(uri, user, reqId, accept);
+        return handler.read(uri, user, reqId, maxAge, accept);
     }
     return null;
 }

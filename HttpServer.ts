@@ -1,13 +1,15 @@
 // Copyright (c) ComUnity 2013
 // hansm@comunity.co.za (Hans Malherbe)
 
-///<reference path="../../typed/node/node.d.ts" />
-///<reference path="../../typed/q/Q.d.ts" />
+///<reference path="../typed/node/node.d.ts" />
+///<reference path="../typed/q/Q.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
+///<reference path="./node_modules/promisefy/index.d.ts" />
 
 import wfbase = require('webframe-base')
 
 import http = require('http')
+import httpCacheDirectives = require('./httpCacheDirectives')
 import p = require('promisefy')
 import Q = require('q')
 import stream = require('stream')
@@ -115,10 +117,17 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
     }
 }
 
+function getMaxAge(headers: any): number {
+    var maxAge = httpCacheDirectives(headers['cache-control'])['max-age']
+    if (maxAge === void 0)
+        return -1
+    return maxAge === void 0 ? -1 : parseInt(maxAge, 10)
+}
+
 function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, user: string, pw: string, reqId: string): Q.Promise<wfbase.Msg> {
     var uri = url.parse('http://' + req.headers['host'] + req.url)
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, req.headers['accept'])
+        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'])
     if (req.method === 'DELETE')
         return remove(handlers, uri, user, pw, reqId)
     if (req.method == 'PUT')
@@ -134,7 +143,7 @@ function getMessage(req: http.ServerRequest): wfbase.Msg {
     return new StreamMsg(0, req.headers, req)
 }
 
-function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, accept: string): Q.Promise<wfbase.Msg> {
+function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -144,7 +153,7 @@ function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string
             continue
         if (!handler.acceptable(accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
-        return handler.read(uri, user, reqId, accept)
+        return handler.read(uri, user, reqId, maxAge, accept)
     }
     return null
 }

@@ -6,8 +6,8 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path="../../typed/node/node.d.ts" />
-///<reference path="../../typed/q/Q.d.ts" />
+///<reference path="../typed/node/node.d.ts" />
+///<reference path="../typed/q/Q.d.ts" />
 ///<reference path="./node_modules/promisefy/index.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
 var wfbase = require('webframe-base');

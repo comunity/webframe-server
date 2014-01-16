@@ -1,9 +1,9 @@
 // Copyright (c) ComUnity 2013
 // hansm@comunity.co.za (Hans Malherbe)
 
-///<reference path="../../typed/node/node.d.ts" />
-///<reference path="../../typed/q/Q.d.ts" />
-///<reference path="../../typed/underscore.string/underscore.string.d.ts" />
+///<reference path="../typed/node/node.d.ts" />
+///<reference path="../typed/q/Q.d.ts" />
+///<reference path="../typed/underscore.string/underscore.string.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
 
 import wfbase = require('webframe-base')
@@ -22,7 +22,7 @@ class FileHandler extends wfbase.Handler {
         return _s.startsWith(uri.pathname, this._virtualroot + '/')
     }
 
-    read(uri: url.Url, user: string, reqId: string, accept: string): Q.Promise<wfbase.Msg> {
+    read(uri: url.Url, user: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg> {
         var filepath = path.join(this._basepath, decodeURIComponent(uri.pathname).substring(this._virtualroot.length))
         return new FileResource(filepath, this._logger).read(reqId, null)
     }

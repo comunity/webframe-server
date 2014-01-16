@@ -9,7 +9,7 @@ declare module 'webframe-server' {
         private _logger;
         constructor(_basepath: string, _virtualroot: string, _logger: wfbase.Logger);
         public identified(uri: url.Url): boolean;
-        public read(uri: url.Url, user: string, reqId: string, accept: string): Q.Promise<wfbase.Msg>;
+        public read(uri: url.Url, user: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg>;
     }
     export class FileResource extends wfbase.Resource {
         private _filepath;
