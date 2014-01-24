@@ -242,6 +242,7 @@ function hasMultipartContentType(contentType) {
 function parseForm(req) {
     var defer = Q.defer();
     var form = new formidable.IncomingForm();
+    form.hash = 'sha1';
 
     form.parse(req, function (err, fields, files) {
         if (err)

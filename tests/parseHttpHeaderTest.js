@@ -1,4 +1,4 @@
-﻿// Copyright (c) ComUnity 2013
+// Copyright (c) ComUnity 2013
 // Hans Malherbe <hansm@comunity.co.za>
 ///<reference path="../../typed/node/node.d.ts" />
 var assert = require('assert');
@@ -44,4 +44,3 @@ function cacheControl() {
     assert.strictEqual(httpCacheDirectives('no-cache,max-age=123')['no-cache'], true);
 }
 module.exports = run;
-//# sourceMappingURL=parseHttpHeaderTest.js.map

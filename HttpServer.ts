@@ -235,6 +235,7 @@ function hasMultipartContentType(contentType: string): boolean {
 function parseForm(req: http.ServerRequest): Q.Promise<wfbase.Msg> {
     var defer = Q.defer<wfbase.Msg>()
     var form = new formidable.IncomingForm();
+    form.hash = 'sha1'
 
     form.parse(req, function (err, fields, files) {
         if (err)
