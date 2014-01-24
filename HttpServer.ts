@@ -10,6 +10,7 @@ import wfbase = require('webframe-base')
 
 import http = require('http')
 import httpCacheDirectives = require('./httpCacheDirectives')
+import HttpHeader = require('./HttpHeader')
 import p = require('promisefy')
 import Q = require('q')
 import stream = require('stream')
@@ -17,6 +18,7 @@ import StreamMsg = require('./StreamMsg')
 import url = require('url')
 import utl = require('util')
 
+var formidable = require('formidable')
 var uuid = require('node-uuid')
 
 class HttpServer {
@@ -136,9 +138,9 @@ function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, user: 
     if (req.method == 'PUT')
         return replace(handlers, uri, user, pw, reqId, getMessage(req))
     if (req.method == 'PATCH')
-        return update(handlers, uri, user, pw, reqId, getMessage(req))
+        return update(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'])
     if (req.method == 'POST')
-        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'])
+        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req)
     return Q.fcall(() => new wfbase.BaseMsg(405, null))
 }
 
@@ -189,7 +191,7 @@ function replace(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: str
     return null
 }
 
-function update(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
+function update(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -205,7 +207,7 @@ function update(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: stri
     return null
 }
 
-function exec(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
+function exec(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept: string, req: http.ServerRequest): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -215,9 +217,34 @@ function exec(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string
             continue
         if (!handler.acceptable(accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
-
-        return handler.acceptable(accept) && handlers[i].exec(uri, user, reqId, message, accept)
+        
+        if (!handler.acceptable(accept))
+            return null
+        if (!hasMultipartContentType(req.headers['content-type']))
+            return handlers[i].exec(uri, user, reqId, message, accept)
+        return parseForm(req).then(incomingMsg => handlers[i].exec(uri, user, reqId, incomingMsg, accept))
     }
     return null
+}
+
+function hasMultipartContentType(contentType: string): boolean {
+    var header = HttpHeader.parse(contentType)
+    return header && <any>header.part('multipart/form-data')
+}
+
+function parseForm(req: http.ServerRequest): Q.Promise<wfbase.Msg> {
+    var defer = Q.defer<wfbase.Msg>()
+    var form = new formidable.IncomingForm();
+
+    form.parse(req, function (err, fields, files) {
+        if (err)
+            return defer.reject(err)
+        var o = {
+        }
+        Object.keys(fields).forEach(key => o[key] = fields[key])
+        Object.keys(files).forEach(key => o[key] = files[key])
+        defer.resolve(new wfbase.ObjectMsg(0, req.headers, o))
+    });
+    return defer.promise
 }
 

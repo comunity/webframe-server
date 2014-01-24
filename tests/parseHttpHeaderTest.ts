@@ -5,16 +5,37 @@
 
 import assert = require('assert')
 import httpCacheDirectives = require('../httpCacheDirectives')
+import HttpHeader = require('../HttpHeader')
 
 function run() {
     console.log('parseHttpHeader   #########################################')
 
     cacheControl()
+    httpHeader()
 
     console.log('parseHttpHeader   -----------------------------------------')
 }
 
 export = run
+
+function httpHeader() {
+    console.log(' httpHeader')
+    var header = HttpHeader.parse('multipart/form-data; boundary=----WebKitFormBoundary8X9d7PuvjCKZpBVb')
+
+    assert(header.part('multipart/form-data'))
+    assert(!header.part('boundary'))
+    assert.equal(header.part('multipart/form-data').option('boundary'), '----WebKitFormBoundary8X9d7PuvjCKZpBVb')
+
+    header = HttpHeader.parse('en-GB,en;q=0.8,en-US;q=0.6,af;q=0.4')
+    assert(header.part('en-GB'))
+    assert(header.part('en'))
+    assert(header.part('en-US'))
+    assert(header.part('af'))
+    assert(!header.part('af-ZA'))
+    assert.equal(header.part('en').option('q'), '0.8')
+
+    assert(!HttpHeader.parse(null))
+}
 
 function cacheControl() {
     console.log(' cacheControl')

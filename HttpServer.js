@@ -8,12 +8,14 @@ var wfbase = require('webframe-base');
 
 var http = require('http');
 var httpCacheDirectives = require('./httpCacheDirectives');
+var HttpHeader = require('./HttpHeader');
 var p = require('promisefy');
 var Q = require('q');
 
 var StreamMsg = require('./StreamMsg');
 var url = require('url');
 
+var formidable = require('formidable');
 var uuid = require('node-uuid');
 
 var HttpServer = (function () {
@@ -143,9 +145,9 @@ function getResponse(handlers, req, user, pw, reqId) {
     if (req.method == 'PUT')
         return replace(handlers, uri, user, pw, reqId, getMessage(req));
     if (req.method == 'PATCH')
-        return update(handlers, uri, user, pw, reqId, getMessage(req));
+        return update(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept']);
     if (req.method == 'POST')
-        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept']);
+        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req);
     return Q.fcall(function () {
         return new wfbase.BaseMsg(405, null);
     });
@@ -210,7 +212,7 @@ function update(handlers, uri, user, pw, reqId, message, accept) {
     return null;
 }
 
-function exec(handlers, uri, user, pw, reqId, message, accept) {
+function exec(handlers, uri, user, pw, reqId, message, accept, req) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -221,8 +223,38 @@ function exec(handlers, uri, user, pw, reqId, message, accept) {
                 return new wfbase.BaseMsg(406);
             });
 
-        return handler.acceptable(accept) && handlers[i].exec(uri, user, reqId, message, accept);
+        if (!handler.acceptable(accept))
+            return null;
+        if (!hasMultipartContentType(req.headers['content-type']))
+            return handlers[i].exec(uri, user, reqId, message, accept);
+        return parseForm(req).then(function (incomingMsg) {
+            return handlers[i].exec(uri, user, reqId, incomingMsg, accept);
+        });
     }
     return null;
+}
+
+function hasMultipartContentType(contentType) {
+    var header = HttpHeader.parse(contentType);
+    return header && header.part('multipart/form-data');
+}
+
+function parseForm(req) {
+    var defer = Q.defer();
+    var form = new formidable.IncomingForm();
+
+    form.parse(req, function (err, fields, files) {
+        if (err)
+            return defer.reject(err);
+        var o = {};
+        Object.keys(fields).forEach(function (key) {
+            return o[key] = fields[key];
+        });
+        Object.keys(files).forEach(function (key) {
+            return o[key] = files[key];
+        });
+        defer.resolve(new wfbase.ObjectMsg(0, req.headers, o));
+    });
+    return defer.promise;
 }
 module.exports = HttpServer;

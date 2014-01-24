@@ -3,6 +3,6 @@
 
 ///<reference path="../../typed/node/node.d.ts" />
 
-import parseHttpHeader = require('./parseHttpHeader') 
+import parseHttpHeaderTest = require('./parseHttpHeaderTest') 
 
-parseHttpHeader()
+parseHttpHeaderTest()

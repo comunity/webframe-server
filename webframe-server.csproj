@@ -71,8 +71,10 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="httpCacheDirectives.ts" />
+    <TypeScriptCompile Include="HttpHeader.ts" />
+    <TypeScriptCompile Include="HttpHeaderPart.ts" />
     <TypeScriptCompile Include="tests\all.ts" />
-    <TypeScriptCompile Include="tests\parseHttpHeader.ts" />
+    <TypeScriptCompile Include="tests\parseHttpHeaderTest.ts" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets')" />
 </Project>
