@@ -23,8 +23,14 @@ var StreamMsg = (function (_super) {
     StreamMsg.prototype.respond = function (res) {
         this.setHeader(res, 'content-length');
         this.setHeaders(res);
+
         if (this.statusCode)
             res.writeHead(this.statusCode);
+
+        if (this._is && this.headers && this.headers['content-type']) {
+            this._is['mimetype'] = this.headers['content-type'];
+        }
+
         if (this._is && this._is['paused']) {
             this._is['paused'] = false;
             this._is.resume();
