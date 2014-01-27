@@ -25,7 +25,7 @@ declare module 'webframe-server' {
         private _replace(track, rep);
         public exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
     }
-    export class class HttpHeaderPart {
+    export class HttpHeaderPart {
         private _name;
         private _options;
         constructor(_name: string, _options: any);
