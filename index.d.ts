@@ -25,6 +25,20 @@ declare module 'webframe-server' {
         private _replace(track, rep);
         public exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
     }
+    export class class HttpHeaderPart {
+        private _name;
+        private _options;
+        constructor(_name: string, _options: any);
+        public name(): string;
+        public option(name: string): any;
+        static parse(s: string): HttpHeaderPart;
+    }
+    export class HttpHeader {
+        private _parts;
+        constructor(_parts: HttpHeaderPart[]);
+        public part(name: string): HttpHeaderPart;
+        static parse(s: string): HttpHeader;
+    }
     export class HttpResource extends wfbase.Resource {
         private _url;
         private _logger;

@@ -1,5 +1,7 @@
 var FileHandler = require('./FileHandler');
 var FileResource = require('./FileResource');
+var HttpHeader = require('./HttpHeader');
+var HttpHeaderPart = require('./HttpHeaderPart');
 var HttpResource = require('./HttpResource');
 var HttpResourceFactory = require('./HttpResourceFactory');
 var HttpServer = require('./HttpServer');
@@ -9,6 +11,8 @@ var StreamMsg = require('./StreamMsg');
 
 var o = {
     FileHandler: FileHandler,
+    HttpHeader: HttpHeader,
+    HttpHeaderPart: HttpHeaderPart,
     FileResource: FileResource,
     HttpResource: HttpResource,
     HttpResourceFactory: HttpResourceFactory,
