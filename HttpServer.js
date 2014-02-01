@@ -66,7 +66,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         var start = process.hrtime();
         var authHeader = req.headers['authorization'];
         res.on('close', function () {
-            return errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: wfbase.privatiseHeaders(req.headers) });
+            return errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: addCors(wfbase.privatiseHeaders(req.headers)) });
         });
         res.on('finish', function () {
             return errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) });
@@ -83,7 +83,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         });
     };
     function mustAuthenticate(res) {
-        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="CU"' });
+        res.writeHead(401, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
         res.end();
     }
     function check(authHeader, reqId) {
@@ -103,27 +103,35 @@ function setupRequestListener(handlers, authn, errorLog) {
     function handle(req, res, user, pw, reqId, start) {
         var incoming = getResponse(handlers, req, user, pw, reqId);
         if (!incoming) {
-            res.writeHead(404);
+            res.writeHead(404, addCors({}));
             return res.end();
         }
 
         incoming.then(function (m) {
             var responder = new Responder(res);
+            m.setHeaders(res);
             return m.respond(responder);
         }).done(null, function (err) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) });
             if (err.detail && err.detail.statusCode) {
-                res.writeHead(err.detail.statusCode, { 'content-type': 'application/json' });
+                res.writeHead(err.detail.statusCode, addCors({ 'content-type': 'application/json' }));
                 return res.end(JSON.stringify(err.detail));
             }
             if (err.statusCode) {
                 res.writeHead(err.statusCode, err.toString());
                 return res.end();
             }
-            res.writeHead(500);
+            res.writeHead(500, addCors({}));
             res.end();
         });
     }
+}
+
+function addCors(headers) {
+    headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH';
+    headers['Access-Control-Allow-Origin'] = '*';
+    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type';
+    return headers;
 }
 
 function getMaxAge(headers) {
@@ -149,7 +157,7 @@ function getResponse(handlers, req, user, pw, reqId) {
     if (req.method == 'POST')
         return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req);
     return Q.fcall(function () {
-        return new wfbase.BaseMsg(405, null);
+        return req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors({})) : new wfbase.BaseMsg(405, null);
     });
 }
 

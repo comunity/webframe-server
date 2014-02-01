@@ -64,7 +64,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         var reqId = uuid.v4()
         var start = process.hrtime()
         var authHeader = req.headers['authorization']
-        res.on('close', () => errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: wfbase.privatiseHeaders(req.headers) }))
+        res.on('close', () => errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: addCors(wfbase.privatiseHeaders(req.headers)) }))
         res.on('finish', () => errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) }))
         if (!authHeader) 
             return handle(req, res, null, null, reqId, start)
@@ -78,7 +78,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         })
     }
     function mustAuthenticate(res: http.ServerResponse): void {
-        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="CU"' })
+        res.writeHead(401, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }))
         res.end()
     }
     function check(authHeader: string, reqId: string): Q.Promise<any> {
@@ -96,27 +96,35 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
     function handle(req: http.ServerRequest, res: http.ServerResponse, user: string, pw: string, reqId: string, start: number[]) {
         var incoming = getResponse(handlers, req, user, pw, reqId)
         if (!incoming) {
-            res.writeHead(404)
+            res.writeHead(404, addCors({}))
             return res.end()
         }
 
         incoming.then(m => {
             var responder = new Responder(res)
+            m.setHeaders(res)
             return m.respond(responder)
         }).done(null, err => {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) })
             if (err.detail && err.detail.statusCode) {
-                res.writeHead(err.detail.statusCode, { 'content-type': 'application/json' })
+                res.writeHead(err.detail.statusCode, addCors({ 'content-type': 'application/json' }))
                 return res.end(JSON.stringify(err.detail))
             }
             if (err.statusCode) {
                 res.writeHead(err.statusCode, err.toString())
                 return res.end()
             }
-            res.writeHead(500)
+            res.writeHead(500, addCors({}))
             res.end()
         })
     }
+}
+
+function addCors(headers) {
+    headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH'
+    headers['Access-Control-Allow-Origin'] = '*'
+    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type'
+    return headers
 }
 
 function getMaxAge(headers: any): number {
@@ -141,7 +149,7 @@ function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, user: 
         return update(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'])
     if (req.method == 'POST')
         return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req)
-    return Q.fcall(() => new wfbase.BaseMsg(405, null))
+    return Q.fcall(() => req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors({})) : new wfbase.BaseMsg(405, null))
 }
 
 function getMessage(req: http.ServerRequest): wfbase.Msg {
