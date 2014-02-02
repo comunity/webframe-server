@@ -16,7 +16,6 @@ var StreamMsg = require('./StreamMsg');
 var url = require('url');
 
 var formidable = require('formidable');
-var uuid = require('node-uuid');
 
 var HttpServer = (function () {
     function HttpServer(port, authn, errorLog) {
@@ -62,7 +61,7 @@ var Responder = (function () {
 
 function setupRequestListener(handlers, authn, errorLog) {
     return function (req, res) {
-        var reqId = uuid.v4();
+        var reqId = errorLog.id();
         var start = process.hrtime();
         var authHeader = req.headers['authorization'];
         res.on('close', function () {

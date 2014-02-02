@@ -19,7 +19,6 @@ import url = require('url')
 import utl = require('util')
 
 var formidable = require('formidable')
-var uuid = require('node-uuid')
 
 class HttpServer {
     server: http.Server
@@ -61,7 +60,7 @@ class Responder implements wfbase.Response {
 
 function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenticate, errorLog: wfbase.Logger) {
     return (req: http.ServerRequest, res: http.ServerResponse) => {
-        var reqId = uuid.v4()
+        var reqId = errorLog.id()
         var start = process.hrtime()
         var authHeader = req.headers['authorization']
         res.on('close', () => errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: addCors(wfbase.privatiseHeaders(req.headers)) }))
