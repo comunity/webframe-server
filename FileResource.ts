@@ -12,43 +12,13 @@ import crypto = require('crypto')
 import fs = require('fs')
 import p = require('promisefy')
 import path = require('path')
-import pullStream = require('./pullStream')
 import Q = require('q')
 import stream = require('stream')
 import StreamMsg = require('./StreamMsg')
 
-var filed = require('filed')
-
 class FileResource extends wfbase.Resource {
-    private _md5tasks: Q.Deferred<NodeBuffer>[]
-    private _md5: NodeBuffer
     constructor(private _filepath: string, private _logger: wfbase.Logger, private _autocreate?: boolean) {
         super()
-        this._md5tasks = []
-    }
-
-    md5(): Q.Promise<NodeBuffer> {
-        if (this._md5)
-            return Q.fcall(() => this._md5)
-        var deferred: Q.Deferred<NodeBuffer> = Q.defer<NodeBuffer>()
-        this._md5tasks.push(deferred)
-        if (this._md5tasks.length > 1) 
-            return deferred.promise
-
-        var hash = crypto.createHash('md5')
-            , is = filed(this._filepath)
-            , reject = reason => {
-                this._md5tasks.forEach(def => def.reject(reason))
-                this._md5tasks = []
-            }
-        is.on('error', err => reject(err))
-        pullStream(is).then(buffer => {
-            hash.update(buffer)
-            this._md5 = <any> hash.digest()
-            this._md5tasks.forEach(def => def.resolve(this._md5))
-            this._md5tasks = []
-        }).fail(reason => reject(reason))
-        return deferred.promise
     }
 
     exists(): Q.Promise<boolean> {
@@ -57,8 +27,8 @@ class FileResource extends wfbase.Resource {
 
     read(track: string, accept: string): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
-
-        return this.exists().then(exists => {
+        
+        return <any>this.exists().then(exists => {
             if (!exists) {
                 this._logger.log('error', track, {
                     method: 'GET',
@@ -66,31 +36,9 @@ class FileResource extends wfbase.Resource {
                     start: start,
                     err: new Error('File Not Found')
                 })
-                new wfbase.Status(404, 'GET', this._filepath, null, null, 'File Not Found').check(err => new Error(err))
+                throw wfbase.statusError(404, () => new Error('File Not Found'))
             }
-            var fileStream = filed(this._filepath)
-            //fileStream.on('error', err => {
-            //    this._logger.log('error', track, {
-            //        method: 'GET',
-            //        url: this._filepath,
-            //        start: start,
-            //        err: new Error(err)
-            //    })
-            //})
-            //fileStream.on('finish', () => {
-            //    this._logger.log('file', track, {
-            //        method: 'GET',
-            //        url: this._filepath,
-            //        start: start
-            //    })
-            //})
-            //fileStream.on('end', () => {
-            //    this._logger.log('file', track, {
-            //        method: 'GET',
-            //        url: this._filepath,
-            //        start: start
-            //    })
-            //})
+            var fileStream = fs.createReadStream(this._filepath)
             this._logger.log('file', track, {
                 method: 'GET',
                 url: this._filepath,
@@ -114,7 +62,14 @@ class FileResource extends wfbase.Resource {
 
     private _replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg> {
         var responder = new Responder(this._filepath)
-        return (this._autocreate ? p.mkdirp(path.dirname(this._filepath)).then(filepath => rep.respond(responder)) : rep.respond(responder))
+        if (!this._autocreate) {
+            rep.respond(responder)
+            return responder.msg()
+        }
+        return p.mkdirp(path.dirname(this._filepath)).then(filepath => {
+                rep.respond(responder)
+                return responder.msg()
+            }) 
     }
 
     exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
@@ -133,17 +88,22 @@ class FileResource extends wfbase.Resource {
 export = FileResource
 
 class Responder implements wfbase.Response {
+    private _msg: Q.Promise<wfbase.Msg>
     constructor(private filepath: string) { }
+    msg(): Q.Promise<wfbase.Msg> {
+        return this._msg
+    }
     writeHead(statusCode: number, reasonPhrase?: string, headers?: any): void {
     }
     setHeader(name: string, value: string): void {
     }
-    end(data?: any, encoding?: string): Q.Promise<wfbase.Msg> {
+    end(data?: any, encoding?: string): void {
         if (!data)
-            return Q.fcall(() => new wfbase.BaseMsg(204))
-        return p.writeFile(this.filepath, data).then(() => new wfbase.BaseMsg(204))
+            this._msg = Q.fcall(() => new wfbase.BaseMsg(204))
+        else
+            this._msg = p.writeFile(this.filepath, data).then(() => new wfbase.BaseMsg(204))
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): Q.Promise<wfbase.Msg> {
-        return p.pipe(source, fs.createWriteStream(this.filepath)).then(() => new wfbase.BaseMsg(204))
+    pipefrom<T extends stream.ReadableStream>(source: T): void {
+        this._msg = p.pipe(source, fs.createWriteStream(this.filepath)).then(() => new wfbase.BaseMsg(204))
     }
 }

@@ -35,7 +35,7 @@ var StreamMsg = (function (_super) {
             this._is['paused'] = false;
             this._is.resume();
         }
-        return res.pipefrom(this._is);
+        res.pipefrom(this._is);
     };
     StreamMsg.prototype.getBuffer = function () {
         return pullStream(this._is);

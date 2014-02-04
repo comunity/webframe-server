@@ -1,6 +1,7 @@
 /// <reference path="../typed/node/node.d.ts" />
 /// <reference path="../typed/q/Q.d.ts" />
 /// <reference path="node_modules/webframe-base/index.d.ts" />
+/// <reference path="node_modules/promisefy/index.d.ts" />
 import wfbase = require('webframe-base');
 declare class HttpResource extends wfbase.Resource {
     private _url;

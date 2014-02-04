@@ -9,6 +9,7 @@ var __extends = this.__extends || function (d, b) {
 ///<reference path="../typed/node/node.d.ts" />
 ///<reference path="../typed/q/Q.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
+///<reference path="./node_modules/promisefy/index.d.ts" />
 var wfbase = require('webframe-base');
 
 var memoryStream = require('./memoryStream');
@@ -29,19 +30,23 @@ var HttpResource = (function (_super) {
     }
     HttpResource.prototype.read = function (track, accept) {
         var responder = new Responder('GET', this._url, track, this._logger, this._dontthrow, accept);
-        return new wfbase.BaseMsg(0).respond(responder);
+        new wfbase.BaseMsg(0).respond(responder);
+        return responder.msg();
     };
     HttpResource.prototype.exec = function (track, message, accept) {
         var responder = new Responder('POST', this._url, track, this._logger, this._dontthrow, accept);
-        return message.respond(responder);
+        message.respond(responder);
+        return responder.msg();
     };
     HttpResource.prototype.replace = function (track, message, accept) {
         var responder = new Responder('PUT', this._url, track, this._logger, this._dontthrow, accept);
-        return message.respond(responder);
+        message.respond(responder);
+        return responder.msg();
     };
     HttpResource.prototype.remove = function (track, accept) {
         var responder = new Responder('DELETE', this._url, track, this._logger, this._dontthrow, accept);
-        return new wfbase.BaseMsg(0).respond(responder);
+        new wfbase.BaseMsg(0).respond(responder);
+        return responder.msg();
     };
     return HttpResource;
 })(wfbase.Resource);
@@ -68,6 +73,9 @@ var Responder = (function () {
         if (this._accept)
             this.headers.accept = this._accept;
     }
+    Responder.prototype.msg = function () {
+        return this._msg;
+    };
     Responder.prototype.writeHead = function (statusCode, reasonPhrase, headers) {
         this.statusCode = statusCode;
         if (reasonPhrase)
@@ -79,10 +87,10 @@ var Responder = (function () {
         this.headers[name] = value;
     };
     Responder.prototype.end = function (data, encoding) {
-        return data ? request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, memoryStream(data)) : request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow);
+        this._msg = data ? request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, memoryStream(data)) : request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow);
     };
     Responder.prototype.pipefrom = function (source) {
-        return request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, source);
+        this._msg = request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, source);
     };
     return Responder;
 })();

@@ -15,10 +15,7 @@ declare module 'webframe-server' {
         private _filepath;
         private _logger;
         private _autocreate;
-        private _md5tasks;
-        private _md5;
         constructor(_filepath: string, _logger: wfbase.Logger, _autocreate?: boolean);
-        public md5(): Q.Promise<NodeBuffer>;
         public exists(): Q.Promise<boolean>;
         public read(track: string, accept: string): Q.Promise<wfbase.Msg>;
         public replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg>;
@@ -67,7 +64,7 @@ declare module 'webframe-server' {
     export class StreamMsg extends wfbase.BaseMsg {
         private _is;
         constructor(statusCode: number, headers: any, _is: stream.ReadableStream);
-        public respond(res: wfbase.Response): Q.Promise<wfbase.Msg>;
+        public respond(res: wfbase.Response): void;
         public getBuffer(): Q.Promise<NodeBuffer>;
     }
 }

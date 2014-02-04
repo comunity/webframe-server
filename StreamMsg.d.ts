@@ -6,7 +6,7 @@ import stream = require('stream');
 declare class StreamMsg extends wfbase.BaseMsg {
     private _is;
     constructor(statusCode: number, headers: any, _is: stream.ReadableStream);
-    public respond(res: wfbase.Response): Q.Promise<wfbase.Msg>;
+    public respond(res: wfbase.Response): void;
     public getBuffer(): Q.Promise<NodeBuffer>;
 }
 export = StreamMsg;

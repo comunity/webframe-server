@@ -13,7 +13,7 @@ import stream = require('stream')
 
 class StreamMsg extends wfbase.BaseMsg {
     constructor(statusCode:number, headers: any, private _is: stream.ReadableStream) { super(statusCode, headers) }
-    respond(res: wfbase.Response): Q.Promise<wfbase.Msg> {
+    respond(res: wfbase.Response): void {
         this.setHeader(res, 'content-length')
         this.setHeaders(res)
 
@@ -28,7 +28,7 @@ class StreamMsg extends wfbase.BaseMsg {
             this._is['paused'] = false
             this._is.resume()
         }
-        return res.pipefrom(this._is)
+        res.pipefrom(this._is)
     }
     getBuffer(): Q.Promise<NodeBuffer> {
         return pullStream(this._is)

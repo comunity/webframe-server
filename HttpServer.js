@@ -11,6 +11,7 @@ var httpCacheDirectives = require('./httpCacheDirectives');
 var HttpHeader = require('./HttpHeader');
 var p = require('promisefy');
 var Q = require('q');
+var ServerResponse = require('./ServerResponse');
 
 var StreamMsg = require('./StreamMsg');
 var url = require('url');
@@ -108,7 +109,7 @@ function setupRequestListener(handlers, authn, errorLog) {
 
         incoming.then(function (m) {
             var responder = new Responder(res);
-            m.setHeaders(res);
+            m.setHeaders(new ServerResponse(res));
             return m.respond(responder);
         }).done(null, function (err) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) });

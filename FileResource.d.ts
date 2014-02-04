@@ -7,10 +7,7 @@ declare class FileResource extends wfbase.Resource {
     private _filepath;
     private _logger;
     private _autocreate;
-    private _md5tasks;
-    private _md5;
     constructor(_filepath: string, _logger: wfbase.Logger, _autocreate?: boolean);
-    public md5(): Q.Promise<NodeBuffer>;
     public exists(): Q.Promise<boolean>;
     public read(track: string, accept: string): Q.Promise<wfbase.Msg>;
     public replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg>;

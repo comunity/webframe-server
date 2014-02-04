@@ -4,6 +4,7 @@
 ///<reference path="../typed/node/node.d.ts" />
 ///<reference path="../typed/q/Q.d.ts" />
 ///<reference path="./node_modules/webframe-base/index.d.ts" />
+///<reference path="./node_modules/promisefy/index.d.ts" />
 
 import wfbase = require('webframe-base')
 
@@ -21,19 +22,23 @@ class HttpResource extends wfbase.Resource {
     constructor(private _url: string, private _logger: wfbase.Logger, private _dontthrow?: boolean) { super() }
     read(track: string, accept: string): Q.Promise<wfbase.Msg> {
         var responder = new Responder('GET', this._url, track, this._logger, this._dontthrow, accept)
-        return new wfbase.BaseMsg(0).respond(responder)
+        new wfbase.BaseMsg(0).respond(responder)
+        return responder.msg()
     }
     exec(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
         var responder = new Responder('POST', this._url, track, this._logger, this._dontthrow, accept)
-        return message.respond(responder)
+        message.respond(responder)
+        return responder.msg()
     }
     replace(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
         var responder = new Responder('PUT', this._url, track, this._logger, this._dontthrow, accept)
-        return message.respond(responder)
+        message.respond(responder)
+        return responder.msg()
     }
     remove(track: string, accept: string): Q.Promise<wfbase.Msg> {
         var responder = new Responder('DELETE', this._url, track, this._logger, this._dontthrow, accept)
-        return new wfbase.BaseMsg(0).respond(responder)
+        new wfbase.BaseMsg(0).respond(responder)
+        return responder.msg()
     }
 }
 
@@ -47,11 +52,15 @@ class Responder implements wfbase.Response {
     private statusCode: number
     private headers: any
     private reasonPhrase: string
+    private _msg: Q.Promise<wfbase.Msg>
     constructor(private _method: string, private _url: string, private _track: string, private _logger: wfbase.Logger, private _dontthrow: boolean, private _accept: string) {
         this.statusCode = 0
         this.headers = {}
         if (this._accept)
             this.headers.accept = this._accept
+    }
+    msg(): Q.Promise<wfbase.Msg> {
+        return this._msg
     }
     writeHead(statusCode: number, reasonPhrase?: string, headers?: any): void {
         this.statusCode = statusCode
@@ -63,11 +72,11 @@ class Responder implements wfbase.Response {
     setHeader(name: string, value: string): void {
         this.headers[name] = value
     }
-    end(data?: any, encoding?: string): Q.Promise<wfbase.Msg> {
-        return data ? request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, memoryStream(data)) : request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow)
+    end(data?: any, encoding?: string): void {
+        this._msg = data ? request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, memoryStream(data)) : request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow)
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): Q.Promise<wfbase.Msg> {
-        return request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, source)
+    pipefrom<T extends stream.ReadableStream>(source: T): void {
+        this._msg = request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, source)
     }
 }
 

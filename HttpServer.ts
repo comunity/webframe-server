@@ -13,6 +13,7 @@ import httpCacheDirectives = require('./httpCacheDirectives')
 import HttpHeader = require('./HttpHeader')
 import p = require('promisefy')
 import Q = require('q')
+import ServerResponse = require('./ServerResponse')
 import stream = require('stream')
 import StreamMsg = require('./StreamMsg')
 import url = require('url')
@@ -67,7 +68,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         res.on('finish', () => errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) }))
         if (!authHeader) 
             return handle(req, res, null, null, reqId, start)
-        check(authHeader, reqId).then(creds => {
+        check(authHeader, reqId).then((creds: any) => {
             if (creds)
                 handle(req, res, creds.user, creds.password, reqId, start)
             else
@@ -101,7 +102,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
 
         incoming.then(m => {
             var responder = new Responder(res)
-            m.setHeaders(res)
+            m.setHeaders(new ServerResponse(res))
             return m.respond(responder)
         }).done(null, err => {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) })
