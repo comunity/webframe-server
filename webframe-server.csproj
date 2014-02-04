@@ -73,6 +73,7 @@
     <TypeScriptCompile Include="httpCacheDirectives.ts" />
     <TypeScriptCompile Include="HttpHeader.ts" />
     <TypeScriptCompile Include="HttpHeaderPart.ts" />
+    <TypeScriptCompile Include="ServerResponse.ts" />
     <TypeScriptCompile Include="tests\all.ts" />
     <TypeScriptCompile Include="tests\parseHttpHeaderTest.ts" />
   </ItemGroup>
