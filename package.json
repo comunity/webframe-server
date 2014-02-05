@@ -16,7 +16,7 @@
 	"formidable": "*",
 	"promisefy": ">0.0.2",
     "underscore.string": "*",
-	"webframe-base": ">=0.1.3"
+	"webframe-base": ">=0.1.4"
     },
   "devDependencies": {},
   "author": {
