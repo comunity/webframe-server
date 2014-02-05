@@ -147,7 +147,7 @@ function getMaxAge(headers: any): number {
 function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, user: string, pw: string, reqId: string): Q.Promise<wfbase.Msg> {
     var uri = url.parse('http://' + req.headers['host'] + req.url)
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'])
+        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since'])
     if (req.method === 'DELETE')
         return remove(handlers, uri, user, pw, reqId)
     if (req.method == 'PUT')
@@ -163,7 +163,7 @@ function getMessage(req: http.ServerRequest): wfbase.Msg {
     return new StreamMsg(0, req.headers, req)
 }
 
-function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg> {
+function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, maxAge: number, accept: string, ifNoneMatch: string, ifModifiedSince: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -173,7 +173,7 @@ function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string
             continue
         if (!handler.acceptable(accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
-        return handler.read(uri, user, reqId, maxAge, accept)
+        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, user, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, user, reqId, maxAge, accept)
     }
     return null
 }

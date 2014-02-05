@@ -156,7 +156,7 @@ function getMaxAge(headers) {
 function getResponse(handlers, req, user, pw, reqId) {
     var uri = url.parse('http://' + req.headers['host'] + req.url);
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept']);
+        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since']);
     if (req.method === 'DELETE')
         return remove(handlers, uri, user, pw, reqId);
     if (req.method == 'PUT')
@@ -174,7 +174,7 @@ function getMessage(req) {
     return new StreamMsg(0, req.headers, req);
 }
 
-function read(handlers, uri, user, pw, reqId, maxAge, accept) {
+function read(handlers, uri, user, pw, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -184,7 +184,7 @@ function read(handlers, uri, user, pw, reqId, maxAge, accept) {
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
-        return handler.read(uri, user, reqId, maxAge, accept);
+        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, user, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, user, reqId, maxAge, accept);
     }
     return null;
 }
