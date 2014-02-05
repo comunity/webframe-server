@@ -114,7 +114,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         function handleError(err: any) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) })
             if (err.detail && err.detail.statusCode) {
-                res.writeHead(err.detail.statusCode, addCors({ 'content-type': 'application/json' }))
+                res.writeHead(err.detail.statusCode, addCors({ 'Content-Type': 'application/json' }))
                 return res.end(JSON.stringify(err.detail))
             }
             if (err.statusCode) {
