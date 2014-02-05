@@ -94,17 +94,24 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         return authn.check(user, password, reqId).then(valid => valid ? { user: user, password: password } : null)
     }
     function handle(req: http.ServerRequest, res: http.ServerResponse, user: string, pw: string, reqId: string, start: number[]) {
-        var incoming = getResponse(handlers, req, user, pw, reqId)
-        if (!incoming) {
-            res.writeHead(404, addCors({}))
-            return res.end()
+        try {
+            var incoming = getResponse(handlers, req, user, pw, reqId)
+            if (!incoming) {
+                    res.writeHead(404, addCors({}))
+                return res.end()
+            }
+            incoming.then(m => {
+                var responder = new Responder(res)
+                m.setHeaders(new ServerResponse(res))
+                return m.respond(responder)
+            }).done(null, err => handleError(err))
+        } catch (err) {
+            handleError(err)
         }
 
-        incoming.then(m => {
-            var responder = new Responder(res)
-            m.setHeaders(new ServerResponse(res))
-            return m.respond(responder)
-        }).done(null, err => {
+        return
+
+        function handleError(err: any) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) })
             if (err.detail && err.detail.statusCode) {
                 res.writeHead(err.detail.statusCode, addCors({ 'content-type': 'application/json' }))
@@ -116,7 +123,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
             }
             res.writeHead(500, addCors({}))
             res.end()
-        })
+        }
     }
 }
 
