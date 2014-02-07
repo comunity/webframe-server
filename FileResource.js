@@ -17,7 +17,7 @@ var p = require('promisefy');
 var path = require('path');
 var Q = require('q');
 
-var StreamMsg = require('./StreamMsg');
+var StreamMesg = require('./StreamMesg');
 
 var FileResource = (function (_super) {
     __extends(FileResource, _super);
@@ -53,7 +53,7 @@ var FileResource = (function (_super) {
                 url: _this._filepath,
                 start: start
             });
-            return new StreamMsg(0, null, fileStream);
+            return new StreamMesg(0, null, fileStream);
         });
     };
 

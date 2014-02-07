@@ -9,7 +9,7 @@ declare module 'webframe-server' {
         private _logger;
         constructor(_basepath: string, _virtualroot: string, _logger: wfbase.Logger);
         public identified(uri: url.Url): boolean;
-        public read(uri: url.Url, user: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg>;
+        public read(uri: url.Url, up: wfbase.UserProfile, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg>;
     }
     export class FileResource extends wfbase.Resource {
         private _filepath;
@@ -61,7 +61,7 @@ declare module 'webframe-server' {
     }
     export function memoryStream(buffer: NodeBuffer): stream.ReadableStream;
     export function pullStream(is: stream.ReadableStream): Q.Promise<NodeBuffer>;
-    export class StreamMsg extends wfbase.BaseMsg {
+    export class StreamMesg extends wfbase.BaseMsg {
         private _is;
         constructor(statusCode: number, headers: any, _is: stream.ReadableStream);
         public respond(res: wfbase.Response): void;

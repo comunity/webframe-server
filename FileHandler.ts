@@ -22,7 +22,7 @@ class FileHandler extends wfbase.Handler {
         return _s.startsWith(uri.pathname, this._virtualroot + '/')
     }
 
-    read(uri: url.Url, user: string, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg> {
+    read(uri: url.Url, up: wfbase.UserProfile, reqId: string, maxAge: number, accept: string): Q.Promise<wfbase.Msg> {
         var filepath = path.join(this._basepath, decodeURIComponent(uri.pathname).substring(this._virtualroot.length))
         return new FileResource(filepath, this._logger).read(reqId, null)
     }

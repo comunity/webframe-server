@@ -7,7 +7,7 @@ import HttpResourceFactory = require('./HttpResourceFactory')
 import HttpServer = require('./HttpServer')
 import memoryStream = require('./memoryStream')
 import pullStream = require('./pullStream')
-import StreamMsg = require('./StreamMsg')
+import StreamMesg = require('./StreamMesg')
 
 var o = {
     FileHandler: FileHandler,
@@ -19,7 +19,7 @@ var o = {
     HttpServer: HttpServer,
     memoryStream: memoryStream,
     pullStream: pullStream,
-    StreamMsg: StreamMsg
+    StreamMesg: StreamMesg
 }
 
 export = o

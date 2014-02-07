@@ -13,7 +13,7 @@ var p = require('promisefy');
 var Q = require('q');
 var ServerResponse = require('./ServerResponse');
 
-var StreamMsg = require('./StreamMsg');
+var StreamMesg = require('./StreamMesg');
 var url = require('url');
 
 var formidable = require('formidable');
@@ -72,10 +72,10 @@ function setupRequestListener(handlers, authn, errorLog) {
             return errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) });
         });
         if (!authHeader)
-            return handle(req, res, null, null, reqId, start);
-        check(authHeader, reqId).then(function (creds) {
-            if (creds)
-                handle(req, res, creds.user, creds.password, reqId, start);
+            return handle(req, res, null, reqId, start);
+        check(authHeader, reqId).then(function (up) {
+            if (up)
+                handle(req, res, up, reqId, start);
             else
                 mustAuthenticate(res);
         }).fail(function (err) {
@@ -94,15 +94,15 @@ function setupRequestListener(handlers, authn, errorLog) {
         var password = parts[1];
         if (!authn)
             return Q.fcall(function () {
-                return { user: user, password: password };
+                return wfbase.UserProfile.make(user, password);
             });
         return authn.check(user, password, reqId).then(function (valid) {
-            return valid ? { user: user, password: password } : null;
+            return valid ? wfbase.UserProfile.make(user, password) : null;
         });
     }
-    function handle(req, res, user, pw, reqId, start) {
+    function handle(req, res, up, reqId, start) {
         try  {
-            var incoming = getResponse(handlers, req, user, pw, reqId);
+            var incoming = getResponse(handlers, req, up, reqId);
             if (!incoming) {
                 res.writeHead(404, addCors({}));
                 return res.end();
@@ -121,7 +121,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         return;
 
         function handleError(err) {
-            errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) });
+            errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, up: up, headers: wfbase.privatiseHeaders(req.headers) });
             if (err.detail && err.detail.statusCode) {
                 res.writeHead(err.detail.statusCode, addCors({ 'Content-Type': 'application/json' }));
                 return res.end(JSON.stringify(err.detail));
@@ -153,28 +153,28 @@ function getMaxAge(headers) {
     return maxAge === void 0 ? -1 : parseInt(maxAge, 10);
 }
 
-function getResponse(handlers, req, user, pw, reqId) {
+function getResponse(handlers, req, up, reqId) {
     var uri = url.parse('http://' + req.headers['host'] + req.url);
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since']);
+        return read(handlers, uri, up, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since']);
     if (req.method === 'DELETE')
-        return remove(handlers, uri, user, pw, reqId);
+        return remove(handlers, uri, up, reqId);
     if (req.method == 'PUT')
-        return replace(handlers, uri, user, pw, reqId, getMessage(req));
+        return replace(handlers, uri, up, reqId, getMessage(req));
     if (req.method == 'PATCH')
-        return update(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept']);
+        return update(handlers, uri, up, reqId, getMessage(req), req.headers['accept']);
     if (req.method == 'POST')
-        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req);
+        return exec(handlers, uri, up, reqId, getMessage(req), req.headers['accept'], req);
     return Q.fcall(function () {
         return req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors({})) : new wfbase.BaseMsg(405, null);
     });
 }
 
 function getMessage(req) {
-    return new StreamMsg(0, req.headers, req);
+    return new StreamMesg(0, req.headers, req);
 }
 
-function read(handlers, uri, user, pw, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) {
+function read(handlers, uri, up, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -184,36 +184,36 @@ function read(handlers, uri, user, pw, reqId, maxAge, accept, ifNoneMatch, ifMod
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
-        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, user, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, user, reqId, maxAge, accept);
+        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, up, reqId, maxAge, accept);
     }
     return null;
 }
 
-function remove(handlers, uri, user, pw, reqId) {
+function remove(handlers, uri, up, reqId) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
 
-        return handler.remove(uri, user, reqId);
+        return handler.remove(uri, up, reqId);
     }
     return null;
 }
 
-function replace(handlers, uri, user, pw, reqId, message) {
+function replace(handlers, uri, up, reqId, message) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
 
-        return handler.replace(uri, user, reqId, message);
+        return handler.replace(uri, up, reqId, message);
     }
     return null;
 }
 
-function update(handlers, uri, user, pw, reqId, message, accept) {
+function update(handlers, uri, up, reqId, message, accept) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -224,12 +224,12 @@ function update(handlers, uri, user, pw, reqId, message, accept) {
                 return new wfbase.BaseMsg(406);
             });
 
-        return handler.acceptable(accept) && handlers[i].update(uri, user, reqId, message, accept);
+        return handler.acceptable(accept) && handlers[i].update(uri, up, reqId, message, accept);
     }
     return null;
 }
 
-function exec(handlers, uri, user, pw, reqId, message, accept, req) {
+function exec(handlers, uri, up, reqId, message, accept, req) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
@@ -243,9 +243,9 @@ function exec(handlers, uri, user, pw, reqId, message, accept, req) {
         if (!handler.acceptable(accept))
             return null;
         if (!hasMultipartContentType(req.headers['content-type']))
-            return handlers[i].exec(uri, user, reqId, message, accept);
+            return handlers[i].exec(uri, up, reqId, message, accept);
         return parseForm(req).then(function (incomingMsg) {
-            return handlers[i].exec(uri, user, reqId, incomingMsg, accept);
+            return handlers[i].exec(uri, up, reqId, incomingMsg, accept);
         });
     }
     return null;

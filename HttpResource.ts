@@ -13,7 +13,7 @@ import memoryStream = require('./memoryStream')
 import p = require('promisefy')
 import Q = require('q')
 import stream = require('stream')
-import StreamMsg = require('./StreamMsg')
+import StreamMesg = require('./StreamMesg')
 
 var hyperquest = require('hyperquest')
     , through = require('through')
@@ -131,7 +131,7 @@ function request(m: string, u: string, headers: any, track: string, logger: wfba
                     response.pause()
                     response['paused'] = true
                 }
-                return deferred.resolve(new StreamMsg(code, response.headers, response))
+                return deferred.resolve(new StreamMesg(code, response.headers, response))
             })
         if (is && method !== 'GET' && method !== 'DELETE') {
             is.on('error', err => deferred.reject(wfbase.statusError(500, () => new Error(err), method, url)))

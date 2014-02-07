@@ -14,7 +14,7 @@ import p = require('promisefy')
 import path = require('path')
 import Q = require('q')
 import stream = require('stream')
-import StreamMsg = require('./StreamMsg')
+import StreamMesg = require('./StreamMesg')
 
 class FileResource extends wfbase.Resource {
     constructor(private _filepath: string, private _logger: wfbase.Logger, private _autocreate?: boolean) {
@@ -44,7 +44,7 @@ class FileResource extends wfbase.Resource {
                 url: this._filepath,
                 start: start
             })
-            return new StreamMsg(0, null, <any> fileStream)
+            return new StreamMesg(0, null, <any> fileStream)
         })
     }
 

@@ -16,7 +16,7 @@ var memoryStream = require('./memoryStream');
 
 var Q = require('q');
 
-var StreamMsg = require('./StreamMsg');
+var StreamMesg = require('./StreamMesg');
 
 var hyperquest = require('hyperquest'), through = require('through');
 
@@ -148,7 +148,7 @@ function request(m, u, headers, track, logger, dontthrow, is) {
                 response.pause();
                 response['paused'] = true;
             }
-            return deferred.resolve(new StreamMsg(code, response.headers, response));
+            return deferred.resolve(new StreamMesg(code, response.headers, response));
         });
         if (is && method !== 'GET' && method !== 'DELETE') {
             is.on('error', function (err) {

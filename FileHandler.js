@@ -28,7 +28,7 @@ var FileHandler = (function (_super) {
         return _s.startsWith(uri.pathname, this._virtualroot + '/');
     };
 
-    FileHandler.prototype.read = function (uri, user, reqId, maxAge, accept) {
+    FileHandler.prototype.read = function (uri, up, reqId, maxAge, accept) {
         var filepath = path.join(this._basepath, decodeURIComponent(uri.pathname).substring(this._virtualroot.length));
         return new FileResource(filepath, this._logger).read(reqId, null);
     };

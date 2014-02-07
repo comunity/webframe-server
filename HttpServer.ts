@@ -15,7 +15,7 @@ import p = require('promisefy')
 import Q = require('q')
 import ServerResponse = require('./ServerResponse')
 import stream = require('stream')
-import StreamMsg = require('./StreamMsg')
+import StreamMesg = require('./StreamMesg')
 import url = require('url')
 import utl = require('util')
 
@@ -67,10 +67,10 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         res.on('close', () => errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: addCors(wfbase.privatiseHeaders(req.headers)) }))
         res.on('finish', () => errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) }))
         if (!authHeader) 
-            return handle(req, res, null, null, reqId, start)
-        check(authHeader, reqId).then((creds: any) => {
-            if (creds)
-                handle(req, res, creds.user, creds.password, reqId, start)
+            return handle(req, res, null, reqId, start)
+        check(authHeader, reqId).then(up => {
+            if (up)
+                handle(req, res, up, reqId, start)
             else
                 mustAuthenticate(res)
         }).fail(err => {
@@ -81,7 +81,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         res.writeHead(401, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }))
         res.end()
     }
-    function check(authHeader: string, reqId: string): Q.Promise<any> {
+    function check(authHeader: string, reqId: string): Q.Promise<wfbase.UserProfile> {
         var token = authHeader.split(/\s+/).pop() || ''
         var auth = new Buffer(token, 'base64').toString()
         var parts = auth.split(/:/)
@@ -89,13 +89,13 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         var password = parts[1]
         if (!authn)
             return Q.fcall(() => {
-                return { user: user, password: password }
+                return wfbase.UserProfile.make(user, password)
             })
-        return authn.check(user, password, reqId).then(valid => valid ? { user: user, password: password } : null)
+        return authn.check(user, password, reqId).then(valid => valid ? wfbase.UserProfile.make(user, password) : null)
     }
-    function handle(req: http.ServerRequest, res: http.ServerResponse, user: string, pw: string, reqId: string, start: number[]) {
+    function handle(req: http.ServerRequest, res: http.ServerResponse, up: wfbase.UserProfile, reqId: string, start: number[]) {
         try {
-            var incoming = getResponse(handlers, req, user, pw, reqId)
+            var incoming = getResponse(handlers, req, up, reqId)
             if (!incoming) {
                     res.writeHead(404, addCors({}))
                 return res.end()
@@ -112,7 +112,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         return
 
         function handleError(err: any) {
-            errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, user: user, password: pw, headers: wfbase.privatiseHeaders(req.headers) })
+            errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, up: up, headers: wfbase.privatiseHeaders(req.headers) })
             if (err.detail && err.detail.statusCode) {
                 res.writeHead(err.detail.statusCode, addCors({ 'Content-Type': 'application/json' }))
                 return res.end(JSON.stringify(err.detail))
@@ -144,26 +144,26 @@ function getMaxAge(headers: any): number {
     return maxAge === void 0 ? -1 : parseInt(maxAge, 10)
 }
 
-function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, user: string, pw: string, reqId: string): Q.Promise<wfbase.Msg> {
+function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, up: wfbase.UserProfile, reqId: string): Q.Promise<wfbase.Msg> {
     var uri = url.parse('http://' + req.headers['host'] + req.url)
     if (req.method === 'GET')
-        return read(handlers, uri, user, pw, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since'])
+        return read(handlers, uri, up, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since'])
     if (req.method === 'DELETE')
-        return remove(handlers, uri, user, pw, reqId)
+        return remove(handlers, uri, up, reqId)
     if (req.method == 'PUT')
-        return replace(handlers, uri, user, pw, reqId, getMessage(req))
+        return replace(handlers, uri, up, reqId, getMessage(req))
     if (req.method == 'PATCH')
-        return update(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'])
+        return update(handlers, uri, up, reqId, getMessage(req), req.headers['accept'])
     if (req.method == 'POST')
-        return exec(handlers, uri, user, pw, reqId, getMessage(req), req.headers['accept'], req)
+        return exec(handlers, uri, up, reqId, getMessage(req), req.headers['accept'], req)
     return Q.fcall(() => req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors({})) : new wfbase.BaseMsg(405, null))
 }
 
 function getMessage(req: http.ServerRequest): wfbase.Msg {
-    return new StreamMsg(0, req.headers, req)
+    return new StreamMesg(0, req.headers, req)
 }
 
-function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, maxAge: number, accept: string, ifNoneMatch: string, ifModifiedSince: string): Q.Promise<wfbase.Msg> {
+function read(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, maxAge: number, accept: string, ifNoneMatch: string, ifModifiedSince: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -173,12 +173,12 @@ function read(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string
             continue
         if (!handler.acceptable(accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
-        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, user, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, user, reqId, maxAge, accept)
+        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, up, reqId, maxAge, accept)
     }
     return null
 }
 
-function remove(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string): Q.Promise<wfbase.Msg> {
+function remove(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -187,12 +187,12 @@ function remove(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: stri
         if (!handler.identified(uri))
             continue
 
-        return handler.remove(uri, user, reqId)
+        return handler.remove(uri, up, reqId)
     }
     return null
 }
 
-function replace(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg): Q.Promise<wfbase.Msg> {
+function replace(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, message: wfbase.Msg): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -201,12 +201,12 @@ function replace(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: str
         if (!handler.identified(uri))
             continue
 
-        return handler.replace(uri, user, reqId, message)
+        return handler.replace(uri, up, reqId, message)
     }
     return null
 }
 
-function update(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept: string): Q.Promise<wfbase.Msg> {
+function update(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, message: wfbase.Msg, accept: string): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -217,12 +217,12 @@ function update(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: stri
         if (!handler.acceptable(accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
 
-        return handler.acceptable(accept) && handlers[i].update(uri, user, reqId, message, accept)
+        return handler.acceptable(accept) && handlers[i].update(uri, up, reqId, message, accept)
     }
     return null
 }
 
-function exec(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string, reqId: string, message: wfbase.Msg, accept: string, req: http.ServerRequest): Q.Promise<wfbase.Msg> {
+function exec(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, message: wfbase.Msg, accept: string, req: http.ServerRequest): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -236,8 +236,8 @@ function exec(handlers: wfbase.Handler[], uri: url.Url, user: string, pw: string
         if (!handler.acceptable(accept))
             return null
         if (!hasMultipartContentType(req.headers['content-type']))
-            return handlers[i].exec(uri, user, reqId, message, accept)
-        return parseForm(req).then(incomingMsg => handlers[i].exec(uri, user, reqId, incomingMsg, accept))
+            return handlers[i].exec(uri, up, reqId, message, accept)
+        return parseForm(req).then(incomingMsg => handlers[i].exec(uri, up, reqId, incomingMsg, accept))
     }
     return null
 }

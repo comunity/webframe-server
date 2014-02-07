@@ -11,7 +11,7 @@ import pullStream = require('./pullStream')
 import Q = require('q')
 import stream = require('stream')
 
-class StreamMsg extends wfbase.BaseMsg {
+class StreamMesg extends wfbase.BaseMsg {
     constructor(statusCode:number, headers: any, private _is: stream.ReadableStream) { super(statusCode, headers) }
     respond(res: wfbase.Response): void {
         this.setHeader(res, 'content-length')
@@ -35,4 +35,4 @@ class StreamMsg extends wfbase.BaseMsg {
     }
 }
 
-export = StreamMsg
+export = StreamMesg
