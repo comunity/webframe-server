@@ -50,7 +50,7 @@ declare module 'webframe-server' {
         private _logger;
         private _dontthrow;
         constructor(_logger: wfbase.Logger, _dontthrow?: boolean);
-        public create(url: string, user: string, pw: string): wfbase.Resource;
+        public create(url: string, up: wfbase.UserProfile): wfbase.Resource;
     }
     export class HttpServer {
         public server: http.Server;

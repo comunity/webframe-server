@@ -9,7 +9,7 @@ import HttpResource = require('./HttpResource')
 
 class HttpResourceFactory implements wfbase.ResourceFactory {
     constructor(private _logger: wfbase.Logger, private _dontthrow?: boolean) { }
-    create(url: string, user: string, pw: string): wfbase.Resource {
+    create(url: string, up: wfbase.UserProfile): wfbase.Resource {
         return new HttpResource(url, this._logger, this._dontthrow)
     }
 }

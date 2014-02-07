@@ -7,7 +7,7 @@ var HttpResourceFactory = (function () {
         this._logger = _logger;
         this._dontthrow = _dontthrow;
     }
-    HttpResourceFactory.prototype.create = function (url, user, pw) {
+    HttpResourceFactory.prototype.create = function (url, up) {
         return new HttpResource(url, this._logger, this._dontthrow);
     };
     return HttpResourceFactory;
