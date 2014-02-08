@@ -122,7 +122,7 @@ function setupRequestListener(handlers, authn, errorLog) {
 
         function handleError(err) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, up: up, headers: wfbase.privatiseHeaders(req.headers) });
-            if (err.detail && err.detail.statusCode) {
+            if (err.detail && err.detail.statusCode && err.detail.statusCode !== 304) {
                 res.writeHead(err.detail.statusCode, addCors({ 'Content-Type': 'application/json' }));
                 return res.end(JSON.stringify(err.detail));
             }
