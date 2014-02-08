@@ -71,7 +71,7 @@ var FileResource = (function (_super) {
     };
 
     FileResource.prototype._replace = function (track, rep, overwrite) {
-        var responder = new Responder(this._filepath, overwrite);
+        var responder = new Responder(this._filepath, overwrite, this._logger, track);
         if (!this._autocreate) {
             rep.respond(responder);
             return responder.msg();
@@ -99,9 +99,11 @@ var FileResource = (function (_super) {
 
 
 var Responder = (function () {
-    function Responder(_filepath, _overwrite) {
+    function Responder(_filepath, _overwrite, _logger, _track) {
         this._filepath = _filepath;
         this._overwrite = _overwrite;
+        this._logger = _logger;
+        this._track = _track;
     }
     Responder.prototype.msg = function () {
         return this._msg;
@@ -111,6 +113,7 @@ var Responder = (function () {
     Responder.prototype.setHeader = function (name, value) {
     };
     Responder.prototype.end = function (data, encoding) {
+        var _this = this;
         if (!data) {
             this._msg = Q.fcall(function () {
                 return new wfbase.BaseMsg(204);
@@ -119,6 +122,15 @@ var Responder = (function () {
         }
         this._msg = p.writeFile(this._filepath, data, this._overwrite).then(function () {
             return new wfbase.BaseMsg(204);
+        }).catch(function (err) {
+            if (err.code === 'EEXIST')
+                return new wfbase.BaseMsg(409);
+            _this._logger.log('error', _this._track, {
+                url: _this._filepath,
+                statusCode: 500,
+                body: err
+            });
+            return new wfbase.BaseMsg(500);
         });
     };
     Responder.prototype.pipefrom = function (source) {

@@ -60,7 +60,7 @@ class FileResource extends wfbase.Resource {
     }
 
     private _replace(track: string, rep: wfbase.Msg, overwrite: boolean): Q.Promise<wfbase.Msg> {
-        var responder = new Responder(this._filepath, overwrite)
+        var responder = new Responder(this._filepath, overwrite, this._logger, track)
         if (!this._autocreate) {
             rep.respond(responder)
             return responder.msg()
@@ -88,7 +88,7 @@ export = FileResource
 
 class Responder implements wfbase.Response {
     private _msg: Q.Promise<wfbase.Msg>
-    constructor(private _filepath: string, private _overwrite: boolean) { }
+    constructor(private _filepath: string, private _overwrite: boolean, private _logger: wfbase.Logger, private _track: string) { }
     msg(): Q.Promise<wfbase.Msg> {
         return this._msg
     }
@@ -101,7 +101,18 @@ class Responder implements wfbase.Response {
             this._msg = Q.fcall(() => new wfbase.BaseMsg(204))
             return
         }
-        this._msg = p.writeFile(this._filepath, data, this._overwrite).then(() => new wfbase.BaseMsg(204))
+        this._msg = p.writeFile(this._filepath, data, this._overwrite)
+            .then(() => new wfbase.BaseMsg(204))
+            .catch(err => {
+                if (err.code === 'EEXIST')
+                    return new wfbase.BaseMsg(409)
+                this._logger.log('error', this._track, {
+                    url: this._filepath,
+                    statusCode: 500,
+                    body: err
+                })
+                return new wfbase.BaseMsg(500)
+            })
     }
     pipefrom<T extends stream.ReadableStream>(source: T): void {
         this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(() => new wfbase.BaseMsg(204))
