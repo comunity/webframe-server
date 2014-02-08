@@ -97,7 +97,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         try {
             var incoming = getResponse(handlers, req, up, reqId)
             if (!incoming) {
-                    res.writeHead(404, addCors({}))
+                    res.writeHead(404, addCors())
                 return res.end()
             }
             incoming.then(m => {
@@ -111,23 +111,29 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
 
         return
 
+        function hasContent(statusCode: number): boolean {
+            return statusCode !== 304 && statusCode !== 204
+        }
+
         function handleError(err: any) {
             errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, up: up, headers: wfbase.privatiseHeaders(req.headers) })
-            if (err.detail && err.detail.statusCode && err.detail.statusCode !== 304) {
-                res.writeHead(err.detail.statusCode, addCors({ 'Content-Type': 'application/json' }))
-                return res.end(JSON.stringify(err.detail))
+            if (err.detail && err.detail.statusCode) {
+                res.writeHead(err.detail.statusCode, addCors(hasContent(err.detail.statusCode) ? { 'Content-Type': 'application/json' } : {}))
+                return res.end(hasContent(err.detail.statusCode) ? JSON.stringify(err.detail) : null)
             }
             if (err.statusCode) {
-                res.writeHead(err.statusCode, err.toString())
+                res.writeHead(err.statusCode, err.toString(), addCors())
                 return res.end()
             }
-            res.writeHead(500, addCors({}))
+            res.writeHead(500, addCors())
             res.end()
         }
     }
 }
 
-function addCors(headers) {
+function addCors(headers?) {
+    if (!headers)
+        headers = {}
     headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH'
     headers['Access-Control-Allow-Origin'] = '*'
     headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type'
@@ -156,7 +162,7 @@ function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, up: wf
         return update(handlers, uri, up, reqId, getMessage(req), req.headers['accept'])
     if (req.method == 'POST')
         return exec(handlers, uri, up, reqId, getMessage(req), req.headers['accept'], req)
-    return Q.fcall(() => req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors({})) : new wfbase.BaseMsg(405, null))
+    return Q.fcall(() => req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors()) : new wfbase.BaseMsg(405, null))
 }
 
 function getMessage(req: http.ServerRequest): wfbase.Msg {
