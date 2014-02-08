@@ -8,7 +8,6 @@
 
 import wfbase = require('webframe-base')
 
-import crypto = require('crypto')
 import fs = require('fs')
 import p = require('promisefy')
 import path = require('path')
@@ -50,7 +49,7 @@ class FileResource extends wfbase.Resource {
 
     replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
-        return this._replace(track, rep).then(m => {
+        return this._replace(track, rep, true).then(m => {
             this._logger.log('file', track, {
                 method: 'PUT',
                 url: this._filepath,
@@ -60,8 +59,8 @@ class FileResource extends wfbase.Resource {
         })
     }
 
-    private _replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg> {
-        var responder = new Responder(this._filepath)
+    private _replace(track: string, rep: wfbase.Msg, overwrite: boolean): Q.Promise<wfbase.Msg> {
+        var responder = new Responder(this._filepath, overwrite)
         if (!this._autocreate) {
             rep.respond(responder)
             return responder.msg()
@@ -74,7 +73,7 @@ class FileResource extends wfbase.Resource {
 
     exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
-        return this._replace(track, rep).then(m => {
+        return this._replace(track, rep, false).then(m => {
             this._logger.log('file', track, {
                 method: 'POST',
                 url: this._filepath,
@@ -89,7 +88,7 @@ export = FileResource
 
 class Responder implements wfbase.Response {
     private _msg: Q.Promise<wfbase.Msg>
-    constructor(private filepath: string) { }
+    constructor(private _filepath: string, private _overwrite: boolean) { }
     msg(): Q.Promise<wfbase.Msg> {
         return this._msg
     }
@@ -101,9 +100,9 @@ class Responder implements wfbase.Response {
         if (!data)
             this._msg = Q.fcall(() => new wfbase.BaseMsg(204))
         else
-            this._msg = p.writeFile(this.filepath, data).then(() => new wfbase.BaseMsg(204))
+            this._msg = p.writeFile(this._filepath, data, this._overwrite).then(() => new wfbase.BaseMsg(204))
     }
     pipefrom<T extends stream.ReadableStream>(source: T): void {
-        this._msg = p.pipe(source, fs.createWriteStream(this.filepath)).then(() => new wfbase.BaseMsg(204))
+        this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(() => new wfbase.BaseMsg(204))
     }
 }

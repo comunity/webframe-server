@@ -60,7 +60,7 @@ var FileResource = (function (_super) {
     FileResource.prototype.replace = function (track, rep) {
         var _this = this;
         var start = process.hrtime();
-        return this._replace(track, rep).then(function (m) {
+        return this._replace(track, rep, true).then(function (m) {
             _this._logger.log('file', track, {
                 method: 'PUT',
                 url: _this._filepath,
@@ -70,8 +70,8 @@ var FileResource = (function (_super) {
         });
     };
 
-    FileResource.prototype._replace = function (track, rep) {
-        var responder = new Responder(this._filepath);
+    FileResource.prototype._replace = function (track, rep, overwrite) {
+        var responder = new Responder(this._filepath, overwrite);
         if (!this._autocreate) {
             rep.respond(responder);
             return responder.msg();
@@ -85,7 +85,7 @@ var FileResource = (function (_super) {
     FileResource.prototype.exec = function (track, rep, accept) {
         var _this = this;
         var start = process.hrtime();
-        return this._replace(track, rep).then(function (m) {
+        return this._replace(track, rep, false).then(function (m) {
             _this._logger.log('file', track, {
                 method: 'POST',
                 url: _this._filepath,
@@ -99,8 +99,9 @@ var FileResource = (function (_super) {
 
 
 var Responder = (function () {
-    function Responder(filepath) {
-        this.filepath = filepath;
+    function Responder(_filepath, _overwrite) {
+        this._filepath = _filepath;
+        this._overwrite = _overwrite;
     }
     Responder.prototype.msg = function () {
         return this._msg;
@@ -115,12 +116,12 @@ var Responder = (function () {
                 return new wfbase.BaseMsg(204);
             });
         else
-            this._msg = p.writeFile(this.filepath, data).then(function () {
+            this._msg = p.writeFile(this._filepath, data, this._overwrite).then(function () {
                 return new wfbase.BaseMsg(204);
             });
     };
     Responder.prototype.pipefrom = function (source) {
-        this._msg = p.pipe(source, fs.createWriteStream(this.filepath)).then(function () {
+        this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(function () {
             return new wfbase.BaseMsg(204);
         });
     };
