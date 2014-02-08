@@ -111,14 +111,15 @@ var Responder = (function () {
     Responder.prototype.setHeader = function (name, value) {
     };
     Responder.prototype.end = function (data, encoding) {
-        if (!data)
+        if (!data) {
             this._msg = Q.fcall(function () {
                 return new wfbase.BaseMsg(204);
             });
-        else
-            this._msg = p.writeFile(this._filepath, data, this._overwrite).then(function () {
-                return new wfbase.BaseMsg(204);
-            });
+            return;
+        }
+        this._msg = p.writeFile(this._filepath, data, this._overwrite).then(function () {
+            return new wfbase.BaseMsg(204);
+        });
     };
     Responder.prototype.pipefrom = function (source) {
         this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(function () {

@@ -97,10 +97,11 @@ class Responder implements wfbase.Response {
     setHeader(name: string, value: string): void {
     }
     end(data?: any, encoding?: string): void {
-        if (!data)
+        if (!data) {
             this._msg = Q.fcall(() => new wfbase.BaseMsg(204))
-        else
-            this._msg = p.writeFile(this._filepath, data, this._overwrite).then(() => new wfbase.BaseMsg(204))
+            return
+        }
+        this._msg = p.writeFile(this._filepath, data, this._overwrite).then(() => new wfbase.BaseMsg(204))
     }
     pipefrom<T extends stream.ReadableStream>(source: T): void {
         this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(() => new wfbase.BaseMsg(204))
