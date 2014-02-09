@@ -145,7 +145,7 @@ function addCors(headers) {
         headers = {};
     headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH';
     headers['Access-Control-Allow-Origin'] = '*';
-    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type';
+    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,Cache-Control,X-Requested-With';
     return headers;
 }
 
