@@ -54,8 +54,8 @@ class Responder implements wfbase.Response {
             return null
         })
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): Q.Promise<wfbase.Msg> {
-        return p.pipe(source, this._res).then(hrtime => null)
+    pipefrom<T extends stream.Readable>(source: T): Q.Promise<wfbase.Msg> {
+        return p.pipe(source, <any>this._res).then(hrtime => null)
     }
 }
 
@@ -166,7 +166,7 @@ function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, up: wf
 }
 
 function getMessage(req: http.ServerRequest): wfbase.Msg {
-    return new StreamMesg(0, req.headers, req)
+    return new StreamMesg(0, req.headers, <any>req)
 }
 
 function read(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, maxAge: number, accept: string, ifNoneMatch: string, ifModifiedSince: string): Q.Promise<wfbase.Msg> {

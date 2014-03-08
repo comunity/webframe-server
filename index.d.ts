@@ -59,11 +59,11 @@ declare module 'webframe-server' {
         public close(): void;
         public add(handler: wfbase.Handler): void;
     }
-    export function memoryStream(buffer: NodeBuffer): stream.ReadableStream;
-    export function pullStream(is: stream.ReadableStream): Q.Promise<NodeBuffer>;
+    export function memoryStream(buffer: NodeBuffer): stream.Readable;
+    export function pullStream(is: stream.Readable): Q.Promise<NodeBuffer>;
     export class StreamMesg extends wfbase.BaseMsg {
         private _is;
-        constructor(statusCode: number, headers: any, _is: stream.ReadableStream);
+        constructor(statusCode: number, headers: any, _is: stream.Readable);
         public respond(res: wfbase.Response): void;
         public getBuffer(): Q.Promise<NodeBuffer>;
     }

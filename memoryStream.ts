@@ -7,7 +7,7 @@ import stream = require('stream')
 
 var from = require('from')
 
-function memoryStream(buffer: NodeBuffer): stream.ReadableStream {
+function memoryStream(buffer: NodeBuffer): stream.Readable {
     var is = from(function getChunk(count, next) {
         if (buffer)
             this.emit('data', buffer)

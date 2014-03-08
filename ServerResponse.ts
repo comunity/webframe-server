@@ -22,8 +22,8 @@ class ServerResponse implements wfbase.Response {
     end(data?: any, encoding?: string): void {
         this._res.end(data, encoding)
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): void {
-        p.pipe(source, this._res)
+    pipefrom<T extends stream.Readable>(source: T): void {
+        p.pipe(source, <any>this._res)
     }
 }
 

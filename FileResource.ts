@@ -114,7 +114,7 @@ class Responder implements wfbase.Response {
                 return new wfbase.BaseMsg(500)
             })
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): void {
-        this._msg = p.pipe(source, fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(() => new wfbase.BaseMsg(204))
+    pipefrom<T extends stream.Readable>(source: T): void {
+        this._msg = p.pipe(source, <any>fs.createWriteStream(this._filepath, { flags: this._overwrite ? 'w' : 'wx' })).then(() => new wfbase.BaseMsg(204))
     }
 }

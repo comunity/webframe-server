@@ -12,7 +12,7 @@ import Q = require('q')
 import stream = require('stream')
 
 class StreamMesg extends wfbase.BaseMsg {
-    constructor(statusCode:number, headers: any, private _is: stream.ReadableStream) { super(statusCode, headers) }
+    constructor(statusCode:number, headers: any, private _is: stream.Readable) { super(statusCode, headers) }
     respond(res: wfbase.Response): void {
         this.setHeader(res, 'content-length')
         this.setHeaders(res)

@@ -75,12 +75,12 @@ class Responder implements wfbase.Response {
     end(data?: any, encoding?: string): void {
         this._msg = data ? request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, memoryStream(data)) : request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow)
     }
-    pipefrom<T extends stream.ReadableStream>(source: T): void {
+    pipefrom<T extends stream.Readable>(source: T): void {
         this._msg = request(this._method, this._url, this.headers, this._track, this._logger, this._dontthrow, source)
     }
 }
 
-function request(m: string, u: string, headers: any, track: string, logger: wfbase.Logger, dontthrow?: boolean, is?: stream.ReadableStream): Q.Promise<wfbase.Msg> {
+function request(m: string, u: string, headers: any, track: string, logger: wfbase.Logger, dontthrow?: boolean, is?: stream.Readable): Q.Promise<wfbase.Msg> {
     var start = process.hrtime()
     var deferred: Q.Deferred<wfbase.Msg> = Q.defer<wfbase.Msg>()
         , retries = 0
@@ -131,7 +131,7 @@ function request(m: string, u: string, headers: any, track: string, logger: wfba
                     response.pause()
                     response['paused'] = true
                 }
-                return deferred.resolve(new StreamMesg(code, response.headers, response))
+                return deferred.resolve(new StreamMesg(code, response.headers, <any>response))
             })
         if (is && method !== 'GET' && method !== 'DELETE') {
             is.on('error', err => deferred.reject(wfbase.statusError(500, () => new Error(err), method, url)))

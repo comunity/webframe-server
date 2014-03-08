@@ -9,7 +9,7 @@ import Q = require('q')
 
 var through = require('through')
 
-function pullStream(is: stream.ReadableStream): Q.Promise<NodeBuffer> {
+function pullStream(is: stream.Readable): Q.Promise<NodeBuffer> {
     var deferred: Q.Deferred<NodeBuffer> = Q.defer<NodeBuffer>()
         , chunks = []
     if (!is) {
