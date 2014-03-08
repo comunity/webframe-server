@@ -12,7 +12,6 @@ var __extends = this.__extends || function (d, b) {
 var wfbase = require('webframe-base');
 
 var pullStream = require('./pullStream');
-var Q = require('q');
 
 var StreamMesg = (function (_super) {
     __extends(StreamMesg, _super);
