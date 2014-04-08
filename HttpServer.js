@@ -83,7 +83,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         });
     };
     function mustAuthenticate(res) {
-        res.writeHead(401, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
+        res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
         res.end();
     }
     function check(authHeader, reqId) {

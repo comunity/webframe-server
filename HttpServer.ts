@@ -78,7 +78,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         })
     }
     function mustAuthenticate(res: http.ServerResponse): void {
-        res.writeHead(401, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }))
+        res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }))
         res.end()
     }
     function check(authHeader: string, reqId: string): Q.Promise<wfbase.UserProfile> {
