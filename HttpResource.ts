@@ -40,6 +40,11 @@ class HttpResource extends wfbase.Resource {
         new wfbase.BaseMsg(0).respond(responder)
         return responder.msg()
     }
+    update(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
+        var responder = new Responder('PATCH', this._url, track, this._logger, this._dontthrow, accept)
+        message.respond(responder)
+        return responder.msg()
+    }
 }
 
 export = HttpResource 

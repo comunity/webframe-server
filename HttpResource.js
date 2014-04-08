@@ -48,6 +48,11 @@ var HttpResource = (function (_super) {
         new wfbase.BaseMsg(0).respond(responder);
         return responder.msg();
     };
+    HttpResource.prototype.update = function (track, message, accept) {
+        var responder = new Responder('PATCH', this._url, track, this._logger, this._dontthrow, accept);
+        message.respond(responder);
+        return responder.msg();
+    };
     return HttpResource;
 })(wfbase.Resource);
 

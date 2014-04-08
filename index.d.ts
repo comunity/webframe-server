@@ -45,6 +45,7 @@ declare module 'webframe-server' {
         public exec(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
         public replace(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
         public remove(track: string, accept: string): Q.Promise<wfbase.Msg>;
+        public update(track: string, message: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
     }
     export class HttpResourceFactory implements wfbase.ResourceFactory {
         private _logger;
