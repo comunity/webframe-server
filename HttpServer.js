@@ -60,8 +60,19 @@ var Responder = (function () {
     return Responder;
 })();
 
+var methodOverrides = {
+    'PATCH': true,
+    'POST': true,
+    'GET': true,
+    'PUT': true,
+    'DELETE': true
+};
+
 function setupRequestListener(handlers, authn, errorLog) {
     return function (req, res) {
+        if (req.headers.mo && methodOverrides[req.headers.mo])
+            req.method = methodOverrides[req.headers.mo];
+
         var reqId = errorLog.id();
         var start = process.hrtime();
         var authHeader = req.headers['authorization'];
