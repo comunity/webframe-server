@@ -71,7 +71,7 @@ var methodOverrides = {
 function setupRequestListener(handlers, authn, errorLog) {
     return function (req, res) {
         if (req.headers.mo && methodOverrides[req.headers.mo])
-            req.method = methodOverrides[req.headers.mo];
+            req.method = req.headers.mo;
 
         var reqId = errorLog.id();
         var start = process.hrtime();
