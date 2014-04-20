@@ -34,9 +34,12 @@ var FileResource = (function (_super) {
     FileResource.prototype.remove = function (track, accept) {
         var deferred = Q.defer();
         fs.unlink(this._filepath, function (err) {
-            if (err)
-                deferred.reject(err);
-            else
+            if (err) {
+                if (err.code === 'ENOENT')
+                    deferred.resolve(new wfbase.BaseMsg(404));
+                else
+                    deferred.reject(err);
+            } else
                 deferred.resolve(new wfbase.BaseMsg(204));
         });
         return deferred.promise;

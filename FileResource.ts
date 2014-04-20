@@ -27,9 +27,12 @@ class FileResource extends wfbase.Resource {
     remove(track: string, accept: string): Q.Promise<wfbase.Msg> {
         var deferred = Q.defer<wfbase.Msg>()
         fs.unlink(this._filepath, err => {
-            if (err)
-                deferred.reject(err)
-            else
+            if (err) {
+                if (err.code === 'ENOENT')
+                    deferred.resolve(new wfbase.BaseMsg(404))
+                else
+                    deferred.reject(err)
+            } else
                 deferred.resolve(new wfbase.BaseMsg(204))
         })
         return deferred.promise
