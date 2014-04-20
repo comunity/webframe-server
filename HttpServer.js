@@ -173,15 +173,15 @@ function getMaxAge(headers) {
 function getResponse(handlers, req, up, reqId) {
     var uri = url.parse('http://' + req.headers['host'] + req.url);
     if (req.method === 'GET')
-        return read(handlers, uri, up, reqId, getMaxAge(req.headers), req.headers['accept'], req.headers['if-none-match'], req.headers['if-modified-since']);
+        return read(handlers, uri, up, reqId, getMaxAge(req.headers), req.headers);
     if (req.method === 'DELETE')
-        return remove(handlers, uri, up, reqId);
+        return remove(handlers, uri, up, reqId, req.headers);
     if (req.method == 'PUT')
-        return replace(handlers, uri, up, reqId, getMessage(req));
+        return replace(handlers, uri, up, reqId, req.headers, getMessage(req));
     if (req.method == 'PATCH')
-        return update(handlers, uri, up, reqId, getMessage(req), req.headers['accept']);
+        return update(handlers, uri, up, reqId, req.headers, getMessage(req));
     if (req.method == 'POST')
-        return exec(handlers, uri, up, reqId, getMessage(req), req.headers['accept'], req);
+        return exec(handlers, uri, up, reqId, getMessage(req), req);
     return Q.fcall(function () {
         return req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors()) : new wfbase.BaseMsg(405, null);
     });
@@ -191,78 +191,78 @@ function getMessage(req) {
     return new StreamMesg(0, req.headers, req);
 }
 
-function read(handlers, uri, up, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) {
+function read(handlers, uri, up, reqId, headers, maxAge) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
-        if (!handler.acceptable(accept))
+        if (!handler.acceptable(headers.accept))
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
-        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, maxAge, accept, ifNoneMatch, ifModifiedSince) : handler.read(uri, up, reqId, maxAge, accept);
+        var ifNoneMatch = headers['if-none-match'];
+        var ifModifiedSince = headers['if-modified-since'];
+        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, maxAge, headers) : handler.read(uri, up, reqId, maxAge, headers);
     }
     return null;
 }
 
-function remove(handlers, uri, up, reqId) {
+function remove(handlers, uri, up, reqId, headers) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
 
-        return handler.remove(uri, up, reqId);
+        return handler.remove(uri, up, reqId, headers);
     }
     return null;
 }
 
-function replace(handlers, uri, up, reqId, message) {
+function replace(handlers, uri, up, reqId, headers, message) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
 
-        return handler.replace(uri, up, reqId, message);
+        return handler.replace(uri, up, reqId, headers, message);
     }
     return null;
 }
 
-function update(handlers, uri, up, reqId, message, accept) {
+function update(handlers, uri, up, reqId, headers, message) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
-        if (!handler.acceptable(accept))
-            return Q.fcall(function () {
-                return new wfbase.BaseMsg(406);
-            });
-
-        return handler.acceptable(accept) && handlers[i].update(uri, up, reqId, message, accept);
-    }
-    return null;
-}
-
-function exec(handlers, uri, up, reqId, message, accept, req) {
-    var i = 0, res, handler;
-    for (; i < handlers.length; ++i) {
-        handler = handlers[i];
-        if (!handler.identified(uri))
-            continue;
-        if (!handler.acceptable(accept))
+        if (!handler.acceptable(headers.accept))
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
 
-        if (!handler.acceptable(accept))
-            return null;
+        return handlers[i].update(uri, up, reqId, headers, message);
+    }
+    return null;
+}
+
+function exec(handlers, uri, up, reqId, message, req) {
+    var i = 0, res, handler;
+    for (; i < handlers.length; ++i) {
+        handler = handlers[i];
+        if (!handler.identified(uri))
+            continue;
+        if (!handler.acceptable(req.headers.accept))
+            return Q.fcall(function () {
+                return new wfbase.BaseMsg(406);
+            });
+
         if (!hasMultipartContentType(req.headers['content-type']))
-            return handlers[i].exec(uri, up, reqId, message, accept);
+            return handlers[i].exec(uri, up, reqId, req.headers, message);
         return parseForm(req).then(function (incomingMsg) {
-            return handlers[i].exec(uri, up, reqId, incomingMsg, accept);
+            return handlers[i].exec(uri, up, reqId, req.headers, incomingMsg);
         });
     }
     return null;
