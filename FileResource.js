@@ -31,6 +31,17 @@ var FileResource = (function (_super) {
         return p.fileExists(this._filepath);
     };
 
+    FileResource.prototype.remove = function (track, accept) {
+        var deferred = Q.defer();
+        fs.unlink(this._filepath, function (err) {
+            if (err)
+                deferred.reject(err);
+            else
+                deferred.resolve(new wfbase.BaseMsg(204));
+        });
+        return deferred.promise;
+    };
+
     FileResource.prototype.read = function (track, accept) {
         var _this = this;
         var start = process.hrtime();

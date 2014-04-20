@@ -21,6 +21,7 @@ declare module 'webframe-server' {
         public replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg>;
         private _replace(track, rep);
         public exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg>;
+        public remove(track: string, accept: string): Q.Promise<wfbase.Msg>;
     }
     export class HttpHeaderPart {
         private _name;

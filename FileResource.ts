@@ -24,6 +24,17 @@ class FileResource extends wfbase.Resource {
         return p.fileExists(this._filepath)
     }
 
+    remove(track: string, accept: string): Q.Promise<wfbase.Msg> {
+        var deferred = Q.defer<wfbase.Msg>()
+        fs.unlink(this._filepath, err => {
+            if (err)
+                deferred.reject(err)
+            else
+                deferred.resolve(new wfbase.BaseMsg(204))
+        })
+        return deferred.promise
+    }
+
     read(track: string, accept: string): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
         
