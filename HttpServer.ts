@@ -252,16 +252,15 @@ function exec(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, 
         if (!handler.acceptable(req.headers.accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
         
-        if (!hasMultipartContentType(req.headers['content-type']))
+        if (!isHtmlForm(req.headers['content-type']))
             return handlers[i].exec(uri, up, reqId, req.headers, message)
         return parseForm(req).then(incomingMsg => handlers[i].exec(uri, up, reqId, req.headers, incomingMsg))
     }
     return null
 }
 
-function hasMultipartContentType(contentType: string): boolean {
-    var header = HttpHeader.parse(contentType)
-    return header && <any>header.part('multipart/form-data')
+function isHtmlForm(contentType: string) {
+    return contentType && (contentType.match(/urlencoded/i) || contentType.match(/multipart/i))
 }
 
 function parseForm(req: http.ServerRequest): Q.Promise<wfbase.Msg> {

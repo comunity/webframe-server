@@ -8,7 +8,7 @@ var wfbase = require('webframe-base');
 
 var http = require('http');
 var httpCacheDirectives = require('./httpCacheDirectives');
-var HttpHeader = require('./HttpHeader');
+
 var p = require('promisefy');
 var Q = require('q');
 var ServerResponse = require('./ServerResponse');
@@ -259,7 +259,7 @@ function exec(handlers, uri, up, reqId, message, req) {
                 return new wfbase.BaseMsg(406);
             });
 
-        if (!hasMultipartContentType(req.headers['content-type']))
+        if (!isHtmlForm(req.headers['content-type']))
             return handlers[i].exec(uri, up, reqId, req.headers, message);
         return parseForm(req).then(function (incomingMsg) {
             return handlers[i].exec(uri, up, reqId, req.headers, incomingMsg);
@@ -268,9 +268,8 @@ function exec(handlers, uri, up, reqId, message, req) {
     return null;
 }
 
-function hasMultipartContentType(contentType) {
-    var header = HttpHeader.parse(contentType);
-    return header && header.part('multipart/form-data');
+function isHtmlForm(contentType) {
+    return contentType && (contentType.match(/urlencoded/i) || contentType.match(/multipart/i));
 }
 
 function parseForm(req) {
