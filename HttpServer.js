@@ -84,7 +84,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         });
         if (!authHeader)
             return handle(req, res, null, reqId, start);
-        check(authHeader, reqId).then(function (up) {
+        check(authHeader, req, reqId).then(function (up) {
             if (up)
                 handle(req, res, up, reqId, start);
             else
@@ -97,7 +97,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
         res.end();
     }
-    function check(authHeader, reqId) {
+    function check(authHeader, req, reqId) {
         var token = authHeader.split(/\s+/).pop() || '';
         var auth = new Buffer(token, 'base64').toString();
         var parts = auth.split(/:/);
@@ -107,7 +107,7 @@ function setupRequestListener(handlers, authn, errorLog) {
             return Q.fcall(function () {
                 return wfbase.UserProfile.make(user, password);
             });
-        return authn.check(user, password, reqId).then(function (valid) {
+        return authn.check(user, password, req, reqId).then(function (valid) {
             return valid ? wfbase.UserProfile.make(user, password) : null;
         });
     }

@@ -79,7 +79,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         res.on('finish', () => errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) }))
         if (!authHeader) 
             return handle(req, res, null, reqId, start)
-        check(authHeader, reqId).then(up => {
+        check(authHeader, req, reqId).then(up => {
             if (up)
                 handle(req, res, up, reqId, start)
             else
@@ -92,7 +92,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }))
         res.end()
     }
-    function check(authHeader: string, reqId: string): Q.Promise<wfbase.UserProfile> {
+    function check(authHeader: string, req: http.ServerRequest, reqId: string): Q.Promise<wfbase.UserProfile> {
         var token = authHeader.split(/\s+/).pop() || ''
         var auth = new Buffer(token, 'base64').toString()
         var parts = auth.split(/:/)
@@ -102,7 +102,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
             return Q.fcall(() => {
                 return wfbase.UserProfile.make(user, password)
             })
-        return authn.check(user, password, reqId).then(valid => valid ? wfbase.UserProfile.make(user, password) : null)
+        return authn.check(user, password, req, reqId).then(valid => valid ? wfbase.UserProfile.make(user, password) : null)
     }
     function handle(req: http.ServerRequest, res: http.ServerResponse, up: wfbase.UserProfile, reqId: string, start: number[]) {
         try {
