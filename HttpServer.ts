@@ -75,7 +75,7 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
         var reqId = errorLog.id()
         var start = process.hrtime()
         var up = userProfile(req.headers['authorization'])
-        res.on('close', () => errorLog.log('error', reqId, start, req.method, req.url, 500, up && up.login, wfbase.privatiseHeaders(req.headers), 'Connection closed'))
+        res.on('close', () => errorLog.log('in', reqId, start, req.method, req.url, 500, up && up.login, wfbase.privatiseHeaders(req.headers), 'Connection closed'))
         res.on('finish', () => errorLog.log('in', reqId, start, req.method, req.url, res.statusCode, up && up.login, wfbase.privatiseHeaders(req.headers)))
         if (!up) 
             return handle(req, res, null, reqId, start)

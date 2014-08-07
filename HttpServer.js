@@ -77,7 +77,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         var start = process.hrtime();
         var up = userProfile(req.headers['authorization']);
         res.on('close', function () {
-            return errorLog.log('error', reqId, start, req.method, req.url, 500, up && up.login, wfbase.privatiseHeaders(req.headers), 'Connection closed');
+            return errorLog.log('in', reqId, start, req.method, req.url, 500, up && up.login, wfbase.privatiseHeaders(req.headers), 'Connection closed');
         });
         res.on('finish', function () {
             return errorLog.log('in', reqId, start, req.method, req.url, res.statusCode, up && up.login, wfbase.privatiseHeaders(req.headers));
