@@ -51,22 +51,13 @@ var FileResource = (function (_super) {
 
         return this.exists().then(function (exists) {
             if (!exists) {
-                _this._logger.log('error', track, {
-                    method: 'GET',
-                    url: _this._filepath,
-                    start: start,
-                    err: new Error('File Not Found')
-                });
+                _this._logger.log('error', track, start, 'GET', _this._filepath, 404);
                 throw wfbase.statusError(404, function () {
                     return new Error('File Not Found');
                 });
             }
             var fileStream = fs.createReadStream(_this._filepath);
-            _this._logger.log('file', track, {
-                method: 'GET',
-                url: _this._filepath,
-                start: start
-            });
+            _this._logger.log('file', track, start, 'GET', _this._filepath, 100);
             return new StreamMesg(0, null, fileStream);
         });
     };
@@ -74,18 +65,14 @@ var FileResource = (function (_super) {
     FileResource.prototype.replace = function (track, rep) {
         var _this = this;
         var start = process.hrtime();
-        return this._replace(track, rep, true).then(function (m) {
-            _this._logger.log('file', track, {
-                method: 'PUT',
-                url: _this._filepath,
-                start: start
-            });
+        return this._replace(track, rep, true, start, 'PUT').then(function (m) {
+            _this._logger.log('file', track, start, 'PUT', _this._filepath, m.statusCode);
             return m;
         });
     };
 
-    FileResource.prototype._replace = function (track, rep, overwrite) {
-        var responder = new Responder(this._filepath, overwrite, this._logger, track);
+    FileResource.prototype._replace = function (track, rep, overwrite, start, method) {
+        var responder = new Responder(this._filepath, overwrite, this._logger, track, start, method);
         if (!this._autocreate) {
             rep.respond(responder);
             return responder.msg();
@@ -99,12 +86,8 @@ var FileResource = (function (_super) {
     FileResource.prototype.exec = function (track, rep, accept) {
         var _this = this;
         var start = process.hrtime();
-        return this._replace(track, rep, false).then(function (m) {
-            _this._logger.log('file', track, {
-                method: 'POST',
-                url: _this._filepath,
-                start: start
-            });
+        return this._replace(track, rep, false, start, 'POST').then(function (m) {
+            _this._logger.log('file', track, start, 'POST', _this._filepath, m.statusCode);
             return m;
         });
     };
@@ -113,11 +96,13 @@ var FileResource = (function (_super) {
 
 
 var Responder = (function () {
-    function Responder(_filepath, _overwrite, _logger, _track) {
+    function Responder(_filepath, _overwrite, _logger, _track, _start, _method) {
         this._filepath = _filepath;
         this._overwrite = _overwrite;
         this._logger = _logger;
         this._track = _track;
+        this._start = _start;
+        this._method = _method;
     }
     Responder.prototype.msg = function () {
         return this._msg;
@@ -139,11 +124,7 @@ var Responder = (function () {
         }).catch(function (err) {
             if (err.code === 'EEXIST')
                 return new wfbase.BaseMsg(409);
-            _this._logger.log('error', _this._track, {
-                url: _this._filepath,
-                statusCode: 500,
-                body: err
-            });
+            _this._logger.log('error', _this._track, _this._start, _this._method, _this._filepath, 500, null, null, err);
             return new wfbase.BaseMsg(500);
         });
     };

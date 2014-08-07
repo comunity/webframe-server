@@ -1,7 +1,7 @@
 {
   "name": "webframe-server",
   "description": "Node.js framework for building REST servers",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/comunity/webframe-server.git"
@@ -16,7 +16,7 @@
 	"formidable": "*",
 	"promisefy": ">=0.3",
     "underscore.string": "*",
-	"webframe-base": ">=0.6.1"
+	"webframe-base": ">=0.7.5"
     },
   "devDependencies": {},
   "author": {

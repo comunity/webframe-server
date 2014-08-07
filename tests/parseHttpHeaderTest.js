@@ -44,3 +44,4 @@ function cacheControl() {
     assert.strictEqual(httpCacheDirectives('no-cache,max-age=123')['no-cache'], true);
 }
 module.exports = run;
+//# sourceMappingURL=parseHttpHeaderTest.js.map

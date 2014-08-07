@@ -75,17 +75,17 @@ function setupRequestListener(handlers, authn, errorLog) {
 
         var reqId = errorLog.id();
         var start = process.hrtime();
-        var authHeader = req.headers['authorization'];
+        var up = userProfile(req.headers['authorization']);
         res.on('close', function () {
-            return errorLog.log('error', reqId, { method: req.method, url: req.url, err: new Error('Connection closed'), start: start, headers: addCors(wfbase.privatiseHeaders(req.headers)) });
+            return errorLog.log('error', reqId, start, req.method, req.url, 500, up && up.login, wfbase.privatiseHeaders(req.headers), 'Connection closed');
         });
         res.on('finish', function () {
-            return errorLog.log('in', reqId, { method: req.method, url: req.url, statusCode: res.statusCode, start: start, headers: wfbase.privatiseHeaders(req.headers) });
+            return errorLog.log('in', reqId, start, req.method, req.url, res.statusCode, up && up.login, wfbase.privatiseHeaders(req.headers));
         });
-        if (!authHeader)
+        if (!up)
             return handle(req, res, null, reqId, start);
-        check(authHeader, req, reqId).then(function (up) {
-            if (up)
+        check(up, req, reqId).then(function (valid) {
+            if (valid)
                 handle(req, res, up, reqId, start);
             else
                 mustAuthenticate(res);
@@ -97,19 +97,22 @@ function setupRequestListener(handlers, authn, errorLog) {
         res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
         res.end();
     }
-    function check(authHeader, req, reqId) {
+    function userProfile(authHeader) {
+        if (!authHeader)
+            return;
         var token = authHeader.split(/\s+/).pop() || '';
         var auth = new Buffer(token, 'base64').toString();
         var parts = auth.split(/:/);
         var user = parts[0];
         var password = parts[1];
+        return wfbase.UserProfile.make(user, password);
+    }
+    function check(up, req, reqId) {
         if (!authn)
             return Q.fcall(function () {
-                return wfbase.UserProfile.make(user, password);
+                return up;
             });
-        return authn.check(user, password, req, reqId).then(function (valid) {
-            return valid ? wfbase.UserProfile.make(user, password) : null;
-        });
+        return authn.check(up.login, up.password, req, reqId);
     }
     function handle(req, res, up, reqId, start) {
         try  {
@@ -136,7 +139,7 @@ function setupRequestListener(handlers, authn, errorLog) {
         }
 
         function handleError(err) {
-            errorLog.log('error', reqId, { method: req.method, url: req.url, err: err, stack: err.stack, start: start, up: up, headers: wfbase.privatiseHeaders(req.headers) });
+            errorLog.log('error', reqId, start, req.method, req.url, (err.detail && err.detail.statusCode) || err.statusCode || 500, up && up.login, wfbase.privatiseHeaders(req.headers), err);
             if (err.detail && err.detail.statusCode) {
                 res.writeHead(err.detail.statusCode, addCors(hasContent(err.detail.statusCode) ? { 'Content-Type': 'application/json' } : {}));
                 return res.end(hasContent(err.detail.statusCode) ? JSON.stringify(err.detail) : null);

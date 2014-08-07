@@ -113,37 +113,17 @@ function request(m, u, headers, track, logger, dontthrow, is) {
             headers: headers
         }, function (err, response) {
             if (err) {
-                logger.log('outError', track, {
-                    method: method,
-                    url: url,
-                    start: start,
-                    err: err
-                });
+                logger.log('outError', track, start, method, url, 500, null, wfbase.privatiseHeaders(headers), err);
                 return deferred.reject(wfbase.statusError(500, function () {
                     return err;
                 }, method, url));
             }
             var location = response.headers['location'], code = response.statusCode;
             if (retries < 5 && location && (code === 301 || code === 302 || code === 303)) {
-                logger.log('redirect', track, {
-                    method: method,
-                    url: url,
-                    statusCode: code,
-                    start: start,
-                    headers: wfbase.privatiseHeaders(headers),
-                    retries: retries,
-                    location: location
-                });
+                logger.log('redirect', track, start, method, url, code, null, wfbase.privatiseHeaders(headers));
                 return go('GET', location);
             } else {
-                logger.log('out', track, {
-                    method: method,
-                    url: url,
-                    statusCode: code,
-                    start: start,
-                    headers: wfbase.privatiseHeaders(headers),
-                    formdata: formdata ? Buffer.concat(formdata).toString() : null
-                });
+                logger.log('out', track, start, method, url, code, null, wfbase.privatiseHeaders(headers), null, formdata ? Buffer.concat(formdata).toString() : null);
             }
             if (!dontthrow && (code < 200 || code >= 300))
                 return deferred.reject(new wfbase.Status(code, method, url, response.headers).error(function (err) {

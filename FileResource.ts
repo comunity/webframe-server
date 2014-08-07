@@ -43,38 +43,25 @@ class FileResource extends wfbase.Resource {
         
         return <any>this.exists().then(exists => {
             if (!exists) {
-                this._logger.log('error', track, {
-                    method: 'GET',
-                    url: this._filepath,
-                    start: start,
-                    err: new Error('File Not Found')
-                })
+                this._logger.log('error', track, start, 'GET', this._filepath, 404)
                 throw wfbase.statusError(404, () => new Error('File Not Found'))
             }
             var fileStream = fs.createReadStream(this._filepath)
-            this._logger.log('file', track, {
-                method: 'GET',
-                url: this._filepath,
-                start: start
-            })
+            this._logger.log('file', track, start, 'GET', this._filepath, 100)
             return new StreamMesg(0, null, <any> fileStream)
         })
     }
 
     replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
-        return this._replace(track, rep, true).then(m => {
-            this._logger.log('file', track, {
-                method: 'PUT',
-                url: this._filepath,
-                start: start
-            })
+        return this._replace(track, rep, true, start, 'PUT').then(m => {
+            this._logger.log('file', track, start, 'PUT', this._filepath, m.statusCode)
             return m
         })
     }
 
-    private _replace(track: string, rep: wfbase.Msg, overwrite: boolean): Q.Promise<wfbase.Msg> {
-        var responder = new Responder(this._filepath, overwrite, this._logger, track)
+    private _replace(track: string, rep: wfbase.Msg, overwrite: boolean, start: number[], method: string): Q.Promise<wfbase.Msg> {
+        var responder = new Responder(this._filepath, overwrite, this._logger, track, start, method)
         if (!this._autocreate) {
             rep.respond(responder)
             return responder.msg()
@@ -87,12 +74,8 @@ class FileResource extends wfbase.Resource {
 
     exec(track: string, rep: wfbase.Msg, accept?: string): Q.Promise<wfbase.Msg> {
         var start = process.hrtime()
-        return this._replace(track, rep, false).then(m => {
-            this._logger.log('file', track, {
-                method: 'POST',
-                url: this._filepath,
-                start: start
-            })
+        return this._replace(track, rep, false, start, 'POST').then(m => {
+            this._logger.log('file', track, start, 'POST', this._filepath, m.statusCode)
             return m
         })
     }
@@ -102,7 +85,7 @@ export = FileResource
 
 class Responder implements wfbase.Response {
     private _msg: Q.Promise<wfbase.Msg>
-    constructor(private _filepath: string, private _overwrite: boolean, private _logger: wfbase.Logger, private _track: string) { }
+    constructor(private _filepath: string, private _overwrite: boolean, private _logger: wfbase.Logger, private _track: string, private _start: number[], private _method: string) { }
     msg(): Q.Promise<wfbase.Msg> {
         return this._msg
     }
@@ -120,11 +103,7 @@ class Responder implements wfbase.Response {
             .catch(err => {
                 if (err.code === 'EEXIST')
                     return new wfbase.BaseMsg(409)
-                this._logger.log('error', this._track, {
-                    url: this._filepath,
-                    statusCode: 500,
-                    body: err
-                })
+                this._logger.log('error', this._track, this._start, this._method, this._filepath, 500, null, null, err)
                 return new wfbase.BaseMsg(500)
             })
     }
