@@ -167,7 +167,7 @@ function getMaxAge(headers: any): number {
 function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, up: wfbase.UserProfile, reqId: string): Q.Promise<wfbase.Msg> {
     var uri = url.parse('http://' + req.headers['host'] + req.url)
     if (req.method === 'GET')
-        return read(handlers, uri, up, reqId, getMaxAge(req.headers), req.headers)
+        return read(handlers, uri, up, reqId, req.headers, getMaxAge(req.headers))
     if (req.method === 'DELETE')
         return remove(handlers, uri, up, reqId, req.headers)
     if (req.method == 'PUT')
@@ -195,7 +195,11 @@ function read(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, 
             return Q.fcall(() => new wfbase.BaseMsg(406))
         var ifNoneMatch = headers['if-none-match']
         var ifModifiedSince = headers['if-modified-since']
-        return ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, maxAge, headers) : handler.read(uri, up, reqId, maxAge, headers)
+        return (ifNoneMatch || ifModifiedSince ? handler.readConditional(uri, up, reqId, headers, maxAge) : handler.read(uri, up, reqId, headers, maxAge)).then(msg => {
+            if (ifNoneMatch && ifNoneMatch === msg.headers.ETag)
+                throw wfbase.statusError(304, () => new Error('Not Modified'))
+            return msg
+        })
     }
     return null
 }
