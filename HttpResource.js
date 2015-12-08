@@ -135,22 +135,26 @@ function request(m, u, headers, track, logger, dontthrow, is) {
             }
             return deferred.resolve(new StreamMesg(code, response.headers, response));
         });
-        if (is && method !== 'GET' && method !== 'DELETE') {
-            is.on('error', function (err) {
-                return deferred.reject(wfbase.statusError(500, function () {
-                    return new Error(err);
-                }, method, url));
-            });
-            if (is.resume && is['paused']) {
-                is['paused'] = false;
-                is.resume();
+        if (method !== 'GET' && method !== 'DELETE') {
+            if (is) {
+                is.on('error', function (err) {
+                    return deferred.reject(wfbase.statusError(500, function () {
+                        return new Error(err);
+                    }, method, url));
+                });
+                if (is.resume && is['paused']) {
+                    is['paused'] = false;
+                    is.resume();
+                }
+                is.pipe(through(function write(data) {
+                    this.queue(data);
+                    formdata.push(data);
+                }, function end() {
+                    this.queue(null);
+                })).pipe(os);
+            } else {
+                os.end();
             }
-            is.pipe(through(function write(data) {
-                this.queue(data);
-                formdata.push(data);
-            }, function end() {
-                this.queue(null);
-            })).pipe(os);
         }
     }
 }
