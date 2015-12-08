@@ -171,9 +171,9 @@ function getResponse(handlers: wfbase.Handler[], req: http.ServerRequest, up: wf
     if (req.method === 'DELETE')
         return remove(handlers, uri, up, reqId, req.headers)
     if (req.method == 'PUT')
-        return replace(handlers, uri, up, reqId, req.headers, getMessage(req))
+        return replace(handlers, uri, up, reqId, getMessage(req), req)
     if (req.method == 'PATCH')
-        return update(handlers, uri, up, reqId, req.headers, getMessage(req))
+        return update(handlers, uri, up, reqId, getMessage(req), req)
     if (req.method == 'POST')
         return exec(handlers, uri, up, reqId, getMessage(req), req)
     return Q.fcall(() => req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors()) : new wfbase.BaseMsg(405, null))
@@ -218,7 +218,7 @@ function remove(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile
     return null
 }
 
-function replace(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, headers, message: wfbase.Msg): Q.Promise<wfbase.Msg> {
+function replace(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, message: wfbase.Msg, req): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -226,13 +226,21 @@ function replace(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfil
         handler = handlers[i]
         if (!handler.identified(uri))
             continue
+        if (!handler.acceptable(req.headers.accept))
+            return Q.fcall(function () {
+                return new wfbase.BaseMsg(406)
+            })
 
-        return handler.replace(uri, up, reqId, headers, message)
+        if (!isHtmlForm(req.headers['content-type']))
+            return handler.replace(uri, up, reqId, req.headers, message)
+        return parseForm(req).then(function (incomingMsg) {
+            return handler.replace(uri, up, reqId, req.headers, incomingMsg)
+        })
     }
     return null
 }
 
-function update(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, headers, message: wfbase.Msg): Q.Promise<wfbase.Msg> {
+function update(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, reqId: string, message: wfbase.Msg, req): Q.Promise<wfbase.Msg> {
     var i = 0
         , res: Q.Promise<wfbase.Msg>
         , handler: wfbase.Handler
@@ -240,10 +248,14 @@ function update(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile
         handler = handlers[i]
         if (!handler.identified(uri))
             continue
-        if (!handler.acceptable(headers.accept))
+        if (!handler.acceptable(req.headers.accept))
             return Q.fcall(() => new wfbase.BaseMsg(406))
 
-        return handlers[i].update(uri, up, reqId, headers, message)
+        if (!isHtmlForm(req.headers['content-type']))
+            return handler.update(uri, up, reqId, req.headers, message)
+        return parseForm(req).then(function (incomingMsg) {
+            return handler.update(uri, up, reqId, req.headers, incomingMsg)
+        })
     }
     return null
 }
@@ -260,8 +272,8 @@ function exec(handlers: wfbase.Handler[], uri: url.Url, up: wfbase.UserProfile, 
             return Q.fcall(() => new wfbase.BaseMsg(406))
         
         if (!isHtmlForm(req.headers['content-type']))
-            return handlers[i].exec(uri, up, reqId, req.headers, message)
-        return parseForm(req).then(incomingMsg => handlers[i].exec(uri, up, reqId, req.headers, incomingMsg))
+            return handler.exec(uri, up, reqId, req.headers, message)
+        return parseForm(req).then(incomingMsg => handler.exec(uri, up, reqId, req.headers, incomingMsg))
     }
     return null
 }

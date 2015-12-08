@@ -180,9 +180,9 @@ function getResponse(handlers, req, up, reqId) {
     if (req.method === 'DELETE')
         return remove(handlers, uri, up, reqId, req.headers);
     if (req.method == 'PUT')
-        return replace(handlers, uri, up, reqId, req.headers, getMessage(req));
+        return replace(handlers, uri, up, reqId, getMessage(req), req);
     if (req.method == 'PATCH')
-        return update(handlers, uri, up, reqId, req.headers, getMessage(req));
+        return update(handlers, uri, up, reqId, getMessage(req), req);
     if (req.method == 'POST')
         return exec(handlers, uri, up, reqId, getMessage(req), req);
     return Q.fcall(function () {
@@ -229,30 +229,42 @@ function remove(handlers, uri, up, reqId, headers) {
     return null;
 }
 
-function replace(handlers, uri, up, reqId, headers, message) {
+function replace(handlers, uri, up, reqId, message, req) {
     var i = 0, res, handler;
     for (; i < handlers.length; ++i) {
         handler = handlers[i];
         if (!handler.identified(uri))
             continue;
-
-        return handler.replace(uri, up, reqId, headers, message);
-    }
-    return null;
-}
-
-function update(handlers, uri, up, reqId, headers, message) {
-    var i = 0, res, handler;
-    for (; i < handlers.length; ++i) {
-        handler = handlers[i];
-        if (!handler.identified(uri))
-            continue;
-        if (!handler.acceptable(headers.accept))
+        if (!handler.acceptable(req.headers.accept))
             return Q.fcall(function () {
                 return new wfbase.BaseMsg(406);
             });
 
-        return handlers[i].update(uri, up, reqId, headers, message);
+        if (!isHtmlForm(req.headers['content-type']))
+            return handler.replace(uri, up, reqId, req.headers, message);
+        return parseForm(req).then(function (incomingMsg) {
+            return handler.replace(uri, up, reqId, req.headers, incomingMsg);
+        });
+    }
+    return null;
+}
+
+function update(handlers, uri, up, reqId, message, req) {
+    var i = 0, res, handler;
+    for (; i < handlers.length; ++i) {
+        handler = handlers[i];
+        if (!handler.identified(uri))
+            continue;
+        if (!handler.acceptable(req.headers.accept))
+            return Q.fcall(function () {
+                return new wfbase.BaseMsg(406);
+            });
+
+        if (!isHtmlForm(req.headers['content-type']))
+            return handler.update(uri, up, reqId, req.headers, message);
+        return parseForm(req).then(function (incomingMsg) {
+            return handler.update(uri, up, reqId, req.headers, incomingMsg);
+        });
     }
     return null;
 }
@@ -269,9 +281,9 @@ function exec(handlers, uri, up, reqId, message, req) {
             });
 
         if (!isHtmlForm(req.headers['content-type']))
-            return handlers[i].exec(uri, up, reqId, req.headers, message);
+            return handler.exec(uri, up, reqId, req.headers, message);
         return parseForm(req).then(function (incomingMsg) {
-            return handlers[i].exec(uri, up, reqId, req.headers, incomingMsg);
+            return handler.exec(uri, up, reqId, req.headers, incomingMsg);
         });
     }
     return null;

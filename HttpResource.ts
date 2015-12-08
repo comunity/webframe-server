@@ -118,23 +118,19 @@ function request(m: string, u: string, headers: any, track: string, logger: wfba
                 }
                 return deferred.resolve(new StreamMesg(code, response.headers, <any>response))
             })
-        if (method !== 'GET' && method !== 'DELETE') {
-            if (is) {
-                is.on('error', err => deferred.reject(wfbase.statusError(500, () => new Error(err), method, url)))
-                if (is.resume && is['paused']) {
-                    is['paused'] = false
-                    is.resume()
-                }
-                is.pipe(through(function write(data) {
-                    this.queue(data)
-                    formdata.push(data)
-                },
-                function end() { 
-                    this.queue(null)
-                })).pipe(os)
-            } else {
-                os.end()
+        if (is && method !== 'GET' && method !== 'DELETE') {
+            is.on('error', err => deferred.reject(wfbase.statusError(500, () => new Error(err), method, url)))
+            if (is.resume && is['paused']) {
+                is['paused'] = false
+                is.resume()
             }
+            is.pipe(through(function write(data) {
+                this.queue(data)
+                formdata.push(data)
+            },
+            function end() { 
+                this.queue(null)
+            })).pipe(os)
         }
     }
 }
