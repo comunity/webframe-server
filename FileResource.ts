@@ -14,6 +14,7 @@ import path = require('path')
 import Q = require('q')
 import stream = require('stream')
 import StreamMesg = require('./StreamMesg')
+var mime = require('mime')
 
 class FileResource extends wfbase.Resource {
     constructor(private _filepath: string, private _logger: wfbase.Logger, private _autocreate?: boolean) {
@@ -48,7 +49,10 @@ class FileResource extends wfbase.Resource {
             }
             var fileStream = fs.createReadStream(this._filepath)
             this._logger.log('file', track, start, 'GET', this._filepath, 100)
-            return new StreamMesg(0, null, <any> fileStream)
+            var headers = {}
+            var contentType = mime.lookup(this._filepath)
+            headers['Content-Type'] = contentType
+            return new StreamMesg(0, headers, <any> fileStream)
         })
     }
 

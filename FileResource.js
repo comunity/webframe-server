@@ -18,6 +18,7 @@ var path = require('path');
 var Q = require('q');
 
 var StreamMesg = require('./StreamMesg');
+var mime = require('mime');
 
 var FileResource = (function (_super) {
     __extends(FileResource, _super);
@@ -58,7 +59,10 @@ var FileResource = (function (_super) {
             }
             var fileStream = fs.createReadStream(_this._filepath);
             _this._logger.log('file', track, start, 'GET', _this._filepath, 100);
-            return new StreamMesg(0, null, fileStream);
+            var headers = {};
+            var contentType = mime.lookup(_this._filepath);
+            headers['Content-Type'] = contentType;
+            return new StreamMesg(0, headers, fileStream);
         });
     };
 
