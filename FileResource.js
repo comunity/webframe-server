@@ -22,11 +22,12 @@ var mime = require('mime');
 
 var FileResource = (function (_super) {
     __extends(FileResource, _super);
-    function FileResource(_filepath, _logger, _autocreate) {
+    function FileResource(_filepath, _logger, _autocreate, _headers) {
         _super.call(this);
         this._filepath = _filepath;
         this._logger = _logger;
         this._autocreate = _autocreate;
+        this._headers = _headers;
     }
     FileResource.prototype.exists = function () {
         return p.fileExists(this._filepath);
@@ -59,10 +60,7 @@ var FileResource = (function (_super) {
             }
             var fileStream = fs.createReadStream(_this._filepath);
             _this._logger.log('file', track, start, 'GET', _this._filepath, 100);
-            var headers = {};
-            var contentType = mime.lookup(_this._filepath);
-            headers['Content-Type'] = contentType;
-            return new StreamMesg(0, headers, fileStream);
+            return new StreamMesg(0, null, fileStream);
         });
     };
 

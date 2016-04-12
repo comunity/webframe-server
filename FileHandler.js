@@ -30,7 +30,7 @@ var FileHandler = (function (_super) {
 
     FileHandler.prototype.read = function (uri, up, reqId, headers, maxAge) {
         var filepath = path.join(this._basepath, decodeURIComponent(uri.pathname).substring(this._virtualroot.length));
-        return new FileResource(filepath, this._logger).read(reqId, null);
+        return new FileResource(filepath, this._logger, false, headers).read(reqId, null);
     };
     return FileHandler;
 })(wfbase.Handler);

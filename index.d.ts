@@ -15,7 +15,7 @@ declare module 'webframe-server' {
         private _filepath;
         private _logger;
         private _autocreate;
-        constructor(_filepath: string, _logger: wfbase.Logger, _autocreate?: boolean);
+        constructor(_filepath: string, _logger: wfbase.Logger, _autocreate?: boolean, _headers?:any);
         public exists(): Q.Promise<boolean>;
         public read(track: string, accept: string): Q.Promise<wfbase.Msg>;
         public replace(track: string, rep: wfbase.Msg): Q.Promise<wfbase.Msg>;
