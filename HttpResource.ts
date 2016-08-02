@@ -61,8 +61,12 @@ class Responder implements wfbase.Response {
     constructor(private _method: string, private _url: string, private _track: string, private _logger: wfbase.Logger, private _dontthrow: boolean, private _accept: string) {
         this.statusCode = 0
         this.headers = {}
-        if (this._accept)
-            this.headers.accept = this._accept
+        if (this._accept) {
+            if (typeof this._accept === 'string')
+                this.headers.accept = this._accept;
+            else
+                this.headers = this._accept;
+        }
     }
     msg(): Q.Promise<wfbase.Msg> {
         return this._msg

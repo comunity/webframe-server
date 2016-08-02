@@ -75,8 +75,12 @@ var Responder = (function () {
         this._accept = _accept;
         this.statusCode = 0;
         this.headers = {};
-        if (this._accept)
-            this.headers.accept = this._accept;
+        if (this._accept) {
+            if (typeof this._accept === 'string')
+                this.headers.accept = this._accept;
+            else
+                this.headers = this._accept;
+        }
     }
     Responder.prototype.msg = function () {
         return this._msg;
