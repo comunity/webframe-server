@@ -54,13 +54,11 @@ var FileResource = (function (_super) {
         return this.exists().then(function (exists) {
             if (!exists) {
                 _this._logger.log('error', track, start, 'GET', _this._filepath, 404);
-                throw wfbase.statusError(404, function () {
-                    return new Error('File Not Found');
-                });
+                return new wfbase.BaseMsg(404);
             }
             var fileStream = fs.createReadStream(_this._filepath);
             _this._logger.log('file', track, start, 'GET', _this._filepath, 100);
-            return new StreamMesg(0, null, fileStream);
+            return new StreamMesg(200, null, fileStream);
         });
     };
 
