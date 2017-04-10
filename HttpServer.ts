@@ -148,9 +148,9 @@ function setupRequestListener(handlers: wfbase.Handler[], authn: wfbase.Authenti
 function addCors(headers?) {
     if (!headers)
         headers = {}
-    headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH'
+    headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH,OPTIONS'
     headers['Access-Control-Allow-Origin'] = '*'
-    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,Cache-Control,X-Requested-With'
+    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,Cache-Control,X-Requested-With,X-XSRF-TOKEN'
     return headers
 }
 
