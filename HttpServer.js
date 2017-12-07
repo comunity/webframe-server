@@ -84,17 +84,20 @@ function setupRequestListener(handlers, authn, errorLog) {
         });
         if (!up)
             return handle(req, res, null, reqId, start);
-        check(up, req, reqId).then(function (valid) {
-            if (valid)
+        check(up, req, reqId).then(function (errorMsg) {
+            if (!errorMsg)
                 handle(req, res, up, reqId, start);
             else
-                mustAuthenticate(res);
+                mustAuthenticate(res, errorMsg);
         }).fail(function (err) {
             mustAuthenticate(res);
         });
     };
-    function mustAuthenticate(res) {
-        res.writeHead(403, addCors({ 'WWW-Authenticate': 'Basic realm="CU"' }));
+    function mustAuthenticate(res, errorMsg) {
+        var headers = { 'WWW-Authenticate': 'Basic realm="CU"' };
+        if (errorMsg) headers['Content-Type'] = 'application/json';
+        res.writeHead(403, addCors(headers));
+        if (errorMsg) res.write(JSON.stringify({"odata.error":{"code":errorMsg.Code,"message":{"value":errorMsg.Description}}}))
         res.end();
     }
     function userProfile(authHeader) {
