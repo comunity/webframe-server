@@ -93,11 +93,23 @@ function setupRequestListener(handlers, authn, errorLog) {
             mustAuthenticate(res);
         });
     };
-    function mustAuthenticate(res, errorMsg) {
+    function mustAuthenticate(res, errorMsg) 
+    {
         var headers = { 'WWW-Authenticate': 'Basic realm="CU"' };
-        if (errorMsg) headers['Content-Type'] = 'application/json';
-        res.writeHead(403, addCors(headers));
-        if (errorMsg) res.write(JSON.stringify({"odata.error":{"code":errorMsg.Code,"message":{"value":errorMsg.Description}}}))
+        if (errorMsg) 
+        {
+            var body = JSON.stringify({"odata.error":{"code":errorMsg.Code,"message":{"value":errorMsg.Description}}});
+            headers['Content-Length'] = body.length;
+            headers['Content-Type'] = 'application/json';
+            res.writeHead(403, addCors(headers));
+            res.write(body)
+        }
+        else
+        {
+            headers['Content-Length'] = 0;
+            res.writeHead(403, addCors(headers));
+        }
+        
         res.end();
     }
     function userProfile(authHeader) {
