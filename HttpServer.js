@@ -102,7 +102,7 @@ function setupRequestListener(handlers, authn, errorLog) {
             headers['Content-Length'] = body.length;
             headers['Content-Type'] = 'application/json';
             res.writeHead(403, addCors(headers));
-            res.write(body)
+            res.write(body);
         }
         else
         {
@@ -120,14 +120,15 @@ function setupRequestListener(handlers, authn, errorLog) {
         var parts = auth.split(/:/);
         var user = parts[0];
         var password = parts[1];
-        return wfbase.UserProfile.make(user, password);
+        var pin = parts.length > 2 ? parts[2] : 0;
+        return wfbase.UserProfile.make(user, password, pin);
     }
     function check(up, req, reqId) {
         if (!authn)
             return Q.fcall(function () {
                 return up;
             });
-        return authn.check(up.login, up.password, req, reqId);
+        return authn.check(up.login, up.password, up.pin, req, reqId);
     }
     function handle(req, res, up, reqId, start) {
         try  {
