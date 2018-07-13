@@ -19,6 +19,15 @@ var Q = require('q');
 
 var StreamMesg = require('./StreamMesg');
 var mime = require('mime');
+mime.define({
+    'text/javascript': ['js'],
+    'application/wasm': ['wasm'],
+    'text/vnd.sun.j2me.app-descriptor': ['jad'],
+    'application/vnd.rim.cod': ['cod'],
+    'application/java-archive': ['jar'],
+    'application/x-plist': ['plist'],
+    'application/xhtml+xml': ['xhtml']
+});
 
 var FileResource = (function (_super) {
     __extends(FileResource, _super);
@@ -58,7 +67,10 @@ var FileResource = (function (_super) {
             }
             var fileStream = fs.createReadStream(_this._filepath);
             _this._logger.log('file', track, start, 'GET', _this._filepath, 100);
-            return new StreamMesg(200, null, fileStream);
+
+            var extNoDot = _this._filepath.substring(_this._filepath.lastIndexOf('.') + 1)
+
+            return new StreamMesg(200, {"Content-Type":mime.lookup(extNoDot)}, fileStream);
         });
     };
 
