@@ -17,6 +17,29 @@ var StreamMesg = require('./StreamMesg');
 var url = require('url');
 
 var formidable = require('formidable');
+var config = require('config');
+
+var cfg = {
+    corsOrigin: process.env.COMUNITY_corsOrigin === void 0 ? config.corsOrigin : process.env.COMUNITY_corsOrigin,
+    corsHeaders: process.env.COMUNITY_corsHeaders === void 0 ? config.corsHeaders : process.env.COMUNITY_corsHeaders,
+    corsMethods: process.env.COMUNITY_corsMethods === void 0 ? config.corsMethods : process.env.COMUNITY_corsMethods
+};
+
+function addCors(headers) {
+    if (!headers)
+        headers = {};
+    if (cfg.corsHeaders)
+    	headers['Access-Control-Allow-Headers'] = cfg.corsHeaders
+    if (cfg.corsOrigin)
+    	headers['Access-Control-Allow-Origin'] = cfg.corsOrigin
+    if (cfg.corsMethods)
+    	headers['Access-Control-Allow-Methods'] = cfg.corsMethods
+
+    // headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH,OPTIONS';
+    // headers['Access-Control-Allow-Origin'] = '*';
+    // headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,Cache-Control,X-Requested-With,X-XSRF-TOKEN';
+    return headers;
+}
 
 var HttpServer = (function () {
     function HttpServer(port, authn, errorLog) {
@@ -170,15 +193,6 @@ function setupRequestListener(handlers, authn, errorLog) {
     }
 }
 
-function addCors(headers) {
-    if (!headers)
-        headers = {};
-    headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,PATCH,OPTIONS';
-    headers['Access-Control-Allow-Origin'] = '*';
-    headers['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,Cache-Control,X-Requested-With,X-XSRF-TOKEN';
-    return headers;
-}
-
 function getMaxAge(headers) {
     var cacheControl = httpCacheDirectives(headers['cache-control']);
     if (!cacheControl)
@@ -190,6 +204,17 @@ function getMaxAge(headers) {
 }
 
 function getResponse(handlers, req, up, reqId) {
+	var r = getResponseImpl(handlers, req, up, reqId);
+	if (!r)
+		return r;
+	return r.then(function (msg) {
+		if (msg)
+			msg.headers = addCors(msg.headers);
+		return msg;
+	});
+}
+
+function getResponseImpl(handlers, req, up, reqId) {
     var uri = url.parse('http://' + req.headers['host'] + req.url);
     if (req.method === 'GET')
         return read(handlers, uri, up, reqId, req.headers, getMaxAge(req.headers));
@@ -202,7 +227,7 @@ function getResponse(handlers, req, up, reqId) {
     if (req.method == 'POST')
         return exec(handlers, uri, up, reqId, getMessage(req), req);
     return Q.fcall(function () {
-        return req.method === 'OPTIONS' ? new wfbase.BaseMsg(200, addCors()) : new wfbase.BaseMsg(405, null);
+        return req.method === 'OPTIONS' ? new wfbase.BaseMsg(200) : new wfbase.BaseMsg(405, null);
     });
 }
 
