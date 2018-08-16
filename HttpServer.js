@@ -144,14 +144,15 @@ function setupRequestListener(handlers, authn, errorLog) {
         var user = parts[0];
         var password = parts[1];
         var pin = parts.length > 2 ? parts[2] : 0;
-        return wfbase.UserProfile.make(user, password, pin);
+        var register = parts.length > 3 ? 'true' === parts[3] : false;
+        return wfbase.UserProfile.make(user, password, pin, register);
     }
     function check(up, req, reqId) {
         if (!authn)
             return Q.fcall(function () {
                 return up;
             });
-        return authn.check(up.login, up.password, up.pin, req, reqId);
+        return authn.check(up.login, up.password, up.pin, up.register, req, reqId);
     }
     function handle(req, res, up, reqId, start) {
         try  {
