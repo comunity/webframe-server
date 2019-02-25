@@ -20,13 +20,7 @@ var Q = require('q');
 var StreamMesg = require('./StreamMesg');
 var mime = require('mime');
 mime.define({
-    'text/javascript': ['js'],
-    'application/wasm': ['wasm'],
-    'text/vnd.sun.j2me.app-descriptor': ['jad'],
-    'application/vnd.rim.cod': ['cod'],
-    'application/java-archive': ['jar'],
-    'application/x-plist': ['plist'],
-    'application/xhtml+xml': ['xhtml']
+    'application/x-plist': ['plist']
 });
 
 var FileResource = (function (_super) {
